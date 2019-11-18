@@ -10,14 +10,17 @@ public class LoginScreen
 {
 	private boolean flag = false;
 	LobbyScreen screen;
+	SignScreen signScreen;
 	JFrame frame;
 	JTextField id;
 	JPasswordField pw;
-	JButton b1;
+	JButton submit , signIn;
 	JPanel panel;
 	JLabel ID, pass;
-	public LoginScreen(boolean flag)
+	Sender send;
+	public LoginScreen(boolean flag ,Sender s)
 	{
+		this.send = s;
 		frame = new JFrame("·Î±×ÀÎ È­¸é");
 		frame.setBounds(500, 500, 400, 300);
 		panel = new JPanel();
@@ -48,12 +51,22 @@ public class LoginScreen
 		panel.add(id);
 		panel.add(pw);
 		
-		b1 = new JButton("Login");
-		b1.setBounds(280,30,80,60);
-		panel.add(b1);
-		b1.addActionListener(new ActionListener() {
+		submit= new JButton("Login");
+		submit.setBounds(280,30,80,60);
+		panel.add(submit);
+		submit.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				loginCheck();
+			}
+		});
+		
+		signIn = new JButton("Sign in");
+		signIn.setBounds(280,150,80,60);
+		panel.add(signIn);
+		signIn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				signScreen = new SignScreen();
+				
 			}
 		});
 		
@@ -61,7 +74,14 @@ public class LoginScreen
 	}
 	public void loginCheck()
 	{
-		if(id.getText().equals("client")&& new String(pw.getPassword()).equals("1234")){
+		boolean flag = true;   // ¶«»§¿ë 
+		String userId = "!@#$:"+id.getText();
+		String userPw = ":"+ new String(pw.getPassword())+":";
+		send.sendString(userId);
+		send.sendString(userPw);
+		
+		
+		if(flag){
 			JOptionPane.showMessageDialog(null, "login success!");
 			flag = true;
 			frame.dispose();
@@ -72,8 +92,8 @@ public class LoginScreen
 			JOptionPane.showMessageDialog(null, "login fail!");
 		}
 	}
-	public boolean getFlag()
-	{
-		return flag;
-	}
+	
+	
+	
+	
 }

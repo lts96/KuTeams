@@ -8,6 +8,7 @@ import java.awt.event.WindowEvent;
 import javax.swing.*;
 public class LobbyScreen 
 {
+	
 	JFrame frame;
 	JButton b1,b2,b3;
 	JPanel panel;
@@ -41,13 +42,13 @@ public class LobbyScreen
 		panel.add(b3);
 		b1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				
+				createRoom();
 			}
 		});
 		
 		b2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				
+				enterRoom();
 			}
 		});
 		
@@ -58,6 +59,16 @@ public class LobbyScreen
 		});
 		frame.setVisible(flag);
 		panel.setVisible(flag);
+	}
+	public void createRoom()
+	{
+		JFrame frm = new JFrame("방 만들기");
+	}
+	public void enterRoom()
+	{
+		
+		JFrame frm = new JFrame("방 이름");
+		
 	}
 	public void printMyInfo()
 	{

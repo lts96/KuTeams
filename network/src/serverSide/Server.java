@@ -19,16 +19,15 @@ import java.util.Scanner;
 
 import clientSide.LoginScreen;
 
-public class Lobby {
+public class Server {
 	
 	private ByteBuffer buffer = ByteBuffer.allocate(1024);
 	Map<SocketChannel, List<byte[]>> client = new HashMap<>();   // 채널마다 byte 배열 저장 필요 -> 메세지 뭐 왔나 저장용
 	public void start() throws IOException 
 	{
-		int default_port = 7777;     // 일단은 임의로 설정 
+		final int default_port = 7777;     // 일단은 임의로 설정     // 기본적인 메세지는 이걸로 받음 , 대신 화면 전송은 다른 프로세스 or 다른 쓰레드 사용 
 		System.out.println("[main server start!!]");
 		//System.out.println("서버 포트 번호 입력 : ");
-		
 		try
 		{
 			InetAddress local = InetAddress.getLocalHost();
@@ -37,9 +36,16 @@ public class Lobby {
 			Selector selector = Selector.open();
 			// msc는 메인 소켓 채널의 약자
 			if(!msc.isOpen())
+			{
 				System.out.println("main server open fail");
-			else 
-				msc.configureBlocking(false);
+				return;
+			}
+			
+			msc.configureBlocking(false);
+			// 옵션값
+			msc.setOption(StandardSocketOptions.SO_RCVBUF, 128*1024);
+			msc.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+			
 			msc.bind(new InetSocketAddress(local , default_port));
         	msc.register(selector, SelectionKey.OP_ACCEPT);
         	System.out.println("클라이언트 연결 기다리는중... "); 
@@ -79,6 +85,19 @@ public class Lobby {
 			//System.exit(1);
 		}
 	}
+	public boolean close(ServerSocketChannel serverS , Selector select ) 
+	{
+		boolean flag = true;
+		try {
+			select.close();
+			serverS.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return !flag;
+		}
+		
+		return flag;
+	}
 
 	private void acceptKey(SelectionKey key, Selector selector) throws IOException {  // accept 가능할때 
 		// TODO Auto-generated method stub
@@ -93,7 +112,7 @@ public class Lobby {
 	}
 	private void readKey(SelectionKey key) throws IOException  // read 가능할때 
 	{
-		String input;
+		String input , id , pw , sub ,dummy;
 		int readNum = -1;
 		try {
 			SocketChannel socketC = (SocketChannel)key.channel();
@@ -111,15 +130,31 @@ public class Lobby {
 			else 
 			{
 				input = new String(buffer.array(),"UTF-8");
-				System.out.println("읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
-				// 다른 클라이언트에게 받은 메세지 보내기 
-				sendMessage( key, buffer.array());
+				int size = input.length();
+				//System.out.println("길이 : "+size+" 읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
+				sub = input.substring(0, 4);
+				//System.out.println(sub);
+				if(sub.equals("!@#$"))  // 패킷 검사하기 (로그인인지 아닌지)
+				{
+					dummy = input.split(":")[0];
+					id = input.split(":")[1];
+					pw = input.split(":")[2];
+					System.out.println("로그인 요청 -> 입력받은 ID : "+ id + " 입력받은 PW : "+ pw);
+					
+					
+					
+				}
+				else
+				{
+					// 다른 클라이언트에게 받은 메세지 보내기 
+					sendMessage( key, buffer.array());
+				}
 			}
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 			System.err.println(e);
-			System.exit(1);     // -> 이거 지우면  클라이언트에서 창 닫을때 계속 에러메세지 출력됨 
+			System.exit(1);    // -> 이거 지우면  클라이언트에서 창 닫을때 계속 에러메세지 출력됨 
 		}
 	}
 	private void writeKey(SelectionKey key) throws IOException   // write 가 가능할때

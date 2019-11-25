@@ -1,4 +1,4 @@
-package clientSide;
+package serverSide;
 
 public class Client 
 {
@@ -6,11 +6,12 @@ public class Client
 	private String id;
 	private String pw;
 	private int time;
+	private String socketAddress;
 	public Client()
 	{
 		
 	}
-	public Client(String name, String id , String pw)
+	public Client(String name, String id , String pw )
 	{
 		this.setName(name);
 		this.setId(id);
@@ -40,6 +41,12 @@ public class Client
 	}
 	public void setTime(int time) {
 		this.time = time;
+	}
+	public String getSocketAddress() {
+		return socketAddress;
+	}
+	public void setSocketAddress(String socketAddress) {
+		this.socketAddress = socketAddress;
 	}
 	
 	

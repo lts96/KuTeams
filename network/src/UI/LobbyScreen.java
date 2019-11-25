@@ -1,21 +1,32 @@
-package clientSide;
+package UI;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
 
 import javax.swing.*;
+
+import clientSide.Receiver;
+import clientSide.Sender;
 public class LobbyScreen 
 {
-	
-	JFrame frame;
-	JButton b1,b2,b3;
-	JPanel panel;
-	JLabel infor;
-	int x = 80;
-	public LobbyScreen(boolean flag)
+	private ArrayList<String> roomList = new ArrayList<String>();
+	private JFrame frame;
+	private JButton b1,b2,b3;
+	private JPanel panel;
+	private JLabel infor;
+	private int x = 80;
+	private CreateRoomScreen crs;
+	private RoomScreen rs;
+	private PrintInfoScreen pis;
+	Sender s; 
+	Receiver r;
+	public LobbyScreen(boolean flag ,Sender s , Receiver r )
 	{
+		this.s = s;
+		this.r = r;
 		frame = new JFrame("메인 화면");
 		frame.setBounds(250, 150, 800, 600);
 		//frame.setLayout(new FlowLayout());
@@ -42,7 +53,7 @@ public class LobbyScreen
 		panel.add(b3);
 		b1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				createRoom();
+				crs = new CreateRoomScreen();
 			}
 		});
 		
@@ -60,18 +71,14 @@ public class LobbyScreen
 		frame.setVisible(flag);
 		panel.setVisible(flag);
 	}
-	public void createRoom()
-	{
-		JFrame frm = new JFrame("방 만들기");
-	}
 	public void enterRoom()
 	{
-		
-		JFrame frm = new JFrame("방 이름");
-		
+		rs = new RoomScreen("테스트용","아무개",4, s ,r); // 출력 테스트 용
 	}
 	public void printMyInfo()
 	{
+		// 서버한테서 내 정보 받아옴 -> 생성자 통해서 내 정보 출력해주는 화면 생성 
+		// pis = new PrintInfoScreen(String name , String id , String pw , String addr , int time);
 		
 	}
 }

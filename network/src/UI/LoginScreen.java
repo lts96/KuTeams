@@ -1,4 +1,4 @@
-package clientSide;
+package UI;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -6,21 +6,25 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 import javax.swing.*;
+
+import clientSide.Receiver;
+import clientSide.Sender;
 public class LoginScreen
 {
 	private boolean flag = false;
-	LobbyScreen screen;
+	private LobbyScreen screen;
 	SignScreen signScreen;
-	JFrame frame;
-	JTextField id;
-	JPasswordField pw;
-	JButton submit , signIn;
-	JPanel panel;
-	JLabel ID, pass;
-	Sender send;
-	public LoginScreen(boolean flag ,Sender s)
+	private JFrame frame;
+	private JTextField id;
+	private JPasswordField pw;
+	private JButton submit , signIn;
+	private JPanel panel;
+	private JLabel ID, pass;
+	Sender send;   Receiver recv;
+	public LoginScreen(boolean flag ,Sender s , Receiver r)
 	{
 		this.send = s;
+		this.recv = r;
 		frame = new JFrame("·Î±×ÀÎ È­¸é");
 		frame.setBounds(500, 500, 400, 300);
 		panel = new JPanel();
@@ -74,20 +78,22 @@ public class LoginScreen
 	}
 	public void loginCheck()
 	{
-		boolean flag = true;   // ¶«»§¿ë 
-		String userId = "!@#$:"+id.getText();
+		String str;
+		String userId = "[lp]:"+id.getText();
 		String userPw = ":"+ new String(pw.getPassword())+":";
 		send.sendString(userId);
 		send.sendString(userPw);
+		recv.receiveString();
+		str = recv.receiveString();
+		System.out.println( "receive msg line 85 : "+ str);
 		
-		
-		if(flag){
+		if(str.contains("[[login success!!]]")){
 			JOptionPane.showMessageDialog(null, "login success!");
 			flag = true;
 			frame.dispose();
-			screen = new LobbyScreen(flag);
+			screen = new LobbyScreen(flag , send , recv);
 		}
-		else 
+		else if(str.contains("[[login fail!!]]"))    // ¿©±â±îÁø µÊ
 		{
 			JOptionPane.showMessageDialog(null, "login fail!");
 		}

@@ -15,17 +15,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-
-
-import clientSide.LoginScreen;
+import UI.LoginScreen;
 
 public class Server {
-	
 	private ByteBuffer buffer = ByteBuffer.allocate(1024);
-	Map<SocketChannel, List<byte[]>> client = new HashMap<>();   // 채널마다 byte 배열 저장 필요 -> 메세지 뭐 왔나 저장용
+	Map<SocketChannel, List<byte[]>> clientChannel = new HashMap<>();   // 채널마다 byte 배열 저장 필요 -> 메세지 뭐 왔나 저장용
+	Map<String, Client> clientInfo = new HashMap<>();
 	public void start() throws IOException 
 	{
-		final int default_port = 7777;     // 일단은 임의로 설정     // 기본적인 메세지는 이걸로 받음 , 대신 화면 전송은 다른 프로세스 or 다른 쓰레드 사용 
+		final int default_port = 9999;     // 일단은 임의로 설정     // 기본적인 메세지는 이걸로 받음 , 대신 화면 전송은 다른 프로세스 or 다른 쓰레드 사용 
+		
+		// 클라이언트 더미데이터 
+		Client c1 = new Client("이태선","client","1234");
+		Client c2 = new Client("김철수", "admin", "2323");
+		clientInfo.put("client", c1);
+		clientInfo.put("admin",c2);
+		
 		System.out.println("[main server start!!]");
 		//System.out.println("서버 포트 번호 입력 : ");
 		try
@@ -105,14 +110,14 @@ public class Server {
 		SocketChannel socketC = serverC.accept();
 		socketC.configureBlocking(false);
 		System.out.println("클라이언트 주소 : " + socketC.getRemoteAddress());
-		socketC.write(ByteBuffer.wrap("서버에 접속되셨습니다.".getBytes("UTF-8")));
+		//socketC.write(ByteBuffer.wrap("서버에 접속되셨습니다.".getBytes("UTF-8")));
 		socketC.register(selector, SelectionKey.OP_READ);
 		
-		client.put(socketC, new ArrayList<byte[]>());
+		clientChannel.put(socketC, new ArrayList<byte[]>());
 	}
 	private void readKey(SelectionKey key) throws IOException  // read 가능할때 
 	{
-		String input , id , pw , sub ,dummy;
+		String input="" ,sub;
 		int readNum = -1;
 		try {
 			SocketChannel socketC = (SocketChannel)key.channel();
@@ -121,7 +126,7 @@ public class Server {
 			if(readNum == -1)
 			{
 				//System.out.println("read close");
-				this.client.remove(socketC);
+				this.clientChannel.remove(socketC);
 				
 				socketC.close();
 				key.cancel();
@@ -130,23 +135,25 @@ public class Server {
 			else 
 			{
 				input = new String(buffer.array(),"UTF-8");
-				int size = input.length();
 				//System.out.println("길이 : "+size+" 읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
 				sub = input.substring(0, 4);
 				//System.out.println(sub);
-				if(sub.equals("!@#$"))  // 패킷 검사하기 (로그인인지 아닌지)
+				if(sub.equals("[lp]"))  // 패킷 검사하기 (로그인인지 아닌지)
 				{
-					dummy = input.split(":")[0];
-					id = input.split(":")[1];
-					pw = input.split(":")[2];
-					System.out.println("로그인 요청 -> 입력받은 ID : "+ id + " 입력받은 PW : "+ pw);
-					
-					
+					checkLogin(input,key);
+				}
+				else if(sub.equals("[sp]"))  // 회원가입인지 아닌지    signin packet
+				{
+					signIn(input, key);
+				}
+				else if(sub.equals("[rp]")) // 방 참가 요청 코드 
+				{
 					
 				}
-				else
+				else if(sub.equals("[cp]"))
 				{
-					// 다른 클라이언트에게 받은 메세지 보내기 
+					// 다른 클라이언트에게 받은 메세지 보내기 broadcast or multicast
+					System.out.println(" 읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
 					sendMessage( key, buffer.array());
 				}
 			}
@@ -160,11 +167,12 @@ public class Server {
 	private void writeKey(SelectionKey key) throws IOException   // write 가 가능할때
 	{
 		SocketChannel socketC = (SocketChannel) key.channel();
-		List<byte[]> clientData = client.get(socketC);
+		List<byte[]> clientData = clientChannel.get(socketC);
 		Iterator<byte[]> it = clientData.iterator();
 		while(it.hasNext()==true)
 		{
 			byte[] temp = it.next();
+			System.out.println("send to client -> "+ new String(temp));  // 뭐 보내는지 체크용 
 			socketC.write(ByteBuffer.wrap(temp));
 			it.remove();
 		}
@@ -176,5 +184,39 @@ public class Server {
 		
 		key.interestOps(SelectionKey.OP_WRITE);
 	}
-
+	
+	
+	public void checkLogin(String input ,SelectionKey key )
+	{
+		SocketChannel socketC = (SocketChannel)key.channel();
+		String loginAcceptCode = "[[login success!!]]";
+		String loginRejectCode = "[[login fail!!]]";
+		String dummy = input.split(":")[0];
+		String id = input.split(":")[1];
+		String pw = input.split(":")[2];
+		System.out.println("로그인 요청 -> 입력받은 ID : "+ id + " 입력받은 PW : "+ pw);	
+		
+		// 해시 맵에서 클라이언트 있는지 찾아보기. 
+		if(clientInfo.containsKey(id)&&clientInfo.get(id).getPw().equals(pw))            // 클라이언트 있을때    이거 이상함 
+		{
+			// 될지 안될지 모름   -> 클라이언트에게 로그인 답장 주는 코드 
+			List<byte[]> updateClientData = clientChannel.get(socketC);
+			updateClientData.add(loginAcceptCode.getBytes());
+			key.interestOps(SelectionKey.OP_WRITE);
+		}
+		else  // 없을때 
+		{
+			List<byte[]> updateClientData = clientChannel.get(socketC);
+			updateClientData.add(loginRejectCode.getBytes());
+			key.interestOps(SelectionKey.OP_WRITE);
+		}
+	}
+	public void signIn(String input , SelectionKey key)
+	{
+		
+	}
+	public void enterRoom()
+	{
+		
+	}
 }

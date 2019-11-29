@@ -26,7 +26,7 @@ public class ClientMain {
 	public static void main(String[] args) throws IOException {
 		InetAddress local = InetAddress.getLocalHost();
 		final String ip = local.getHostAddress();   // 노트북 로컬 ip 
-		//System.out.println("localhost : "+ip);
+	
 		final int default_port = 8888;
 		// 일단 임의로 로컬 호스트랑 포트 번호 지정 , 나중에는 로컬이 아니라 외부 ip , 그리고 
 		// 포트 번호도 따로 입력 받던가 해야됨.

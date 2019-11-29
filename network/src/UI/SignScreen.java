@@ -70,6 +70,7 @@ public class SignScreen
 	
 		frame.setVisible(flag);
 	}
+	
 	public void screenOn(boolean flag)
 	{
 		this.frame.setVisible(flag);

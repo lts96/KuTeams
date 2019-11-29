@@ -14,7 +14,7 @@ public class Sender
 	{
 		this.socketC = s;
 	}
-	public boolean sendString(String str)  // ok
+	public boolean sendString(String str)  
 	{
 		boolean flag = true;
 		try {

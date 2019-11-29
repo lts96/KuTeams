@@ -8,7 +8,7 @@ public class PrintInfoScreen
 	{
 		
 	}
-	public PrintInfoScreen(boolean flag , String name , String id , String pw , String socketAddr , int time)
+	public PrintInfoScreen(boolean flag , String name , String id , String pw , String socketAddr , int time) // 미완 
 	{
 		frame = new JFrame(name+"의 회원 정보");
 		JPanel panel = new JPanel();

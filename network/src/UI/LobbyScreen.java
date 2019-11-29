@@ -21,7 +21,7 @@ public class LobbyScreen
 	private PrintInfoScreen pis;
 	Sender s; 
 	
-	public LobbyScreen(boolean flag ,Sender s , CreateRoomScreen crs)  // 미완성 
+	public LobbyScreen(boolean flag ,Sender s , CreateRoomScreen crs)  // 미완성.
 	{
 		this.crs = crs;
 		this.s = s;

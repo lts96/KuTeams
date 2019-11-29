@@ -94,7 +94,7 @@ public class LoginScreen
 			frame.dispose();
 			screen.screenOn(true);
 		}
-		else if(str.contains("[[login fail!!!]]"))    // 여기까진 됨
+		else if(str.contains("[[login fail!!!]]"))   
 		{
 			JOptionPane.showMessageDialog(null, "login fail!");
 		}

@@ -17,7 +17,7 @@ public class File
 		output = new FileOutputStream(path);
 		this.path = Paths.get(path);
 	}
-	public void write(String str) 
+	public void write(String str) //
 	{
 		byte [] b = str.getBytes();
 		try {

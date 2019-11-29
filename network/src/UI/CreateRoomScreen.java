@@ -16,7 +16,7 @@ public class CreateRoomScreen
 	private JPanel panel;
 	private JLabel roomName , teacher , studentNum;
 	private Sender send;
-	public CreateRoomScreen(boolean flag ,Sender s)   // ÀßµÊ 
+	public CreateRoomScreen(boolean flag ,Sender s)   // ÀßµÊ.
 	{
 		this.send = s;
 		frame = new JFrame("¹æ ¸¸µé±â");

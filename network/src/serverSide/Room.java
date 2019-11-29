@@ -11,7 +11,7 @@ public class Room
 	private int limit = 3;
 	private List<Client> clientList = new ArrayList<Client>();
 	
-	public Room(int code, String name , String tname , int limit)  // 아직은 변경사항 없음 
+	public Room(int code, String name , String tname , int limit)  
 	{
 		this.roomCode = code;
 		this.roomName = name; 

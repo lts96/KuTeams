@@ -18,7 +18,7 @@ public class RoomScreen {
 	{
 		
 	}
-	public RoomScreen(String roomName , String teacher , int snum , Sender s)
+	public RoomScreen(String roomName , String teacher , int snum , Sender s) //
 	{
 		this.send = s;
 		int x = Toolkit.getDefaultToolkit().getScreenSize().width / 2 - width / 2; 

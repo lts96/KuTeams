@@ -28,7 +28,7 @@ public class ChatScreen
 		frame.add(panel);
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				// close thread
+				
 				System.exit(0);
 			}
 		});

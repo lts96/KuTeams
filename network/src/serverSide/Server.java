@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Scanner;
 
 import UI.LoginScreen;
@@ -20,7 +21,10 @@ import UI.LoginScreen;
 public class Server {
 	private ByteBuffer buffer = ByteBuffer.allocate(1024);
 	Map<SocketChannel, List<byte[]>> clientChannel = new HashMap<>();   // 채널마다 byte 배열 저장 필요 -> 메세지 뭐 왔나 저장용
-	Map<String, Client> clientInfo = new HashMap<>();
+	List<Client> clientlist = new ArrayList<>();
+	List<Room> roomList = new ArrayList<>();
+	ServerSocketChannel msc = null;
+	Selector selector = null;
 	public void start() throws IOException 
 	{
 		final int default_port = 9999;     // 일단은 임의로 설정     // 기본적인 메세지는 이걸로 받음 , 대신 화면 전송은 다른 프로세스 or 다른 쓰레드 사용 
@@ -28,8 +32,14 @@ public class Server {
 		// 클라이언트 더미데이터 
 		Client c1 = new Client("이태선","client","1234");
 		Client c2 = new Client("김철수", "admin", "2323");
-		clientInfo.put("client", c1);
-		clientInfo.put("admin",c2);
+		Client c3 = new Client("존", "john","3333");
+		clientlist.add(c1);
+		clientlist.add(c2);
+		clientlist.add(c3);
+		
+		// 룸 더미데이터 
+		Room r1 = new Room(roomList.size()+1,"test 룸","김철수");
+		
 		
 		System.out.println("[main server start!!]");
 		//System.out.println("서버 포트 번호 입력 : ");
@@ -37,8 +47,8 @@ public class Server {
 		{
 			InetAddress local = InetAddress.getLocalHost();
 			System.out.println("main server IP : " + local.getHostAddress());  // 확인용 
-			ServerSocketChannel msc = ServerSocketChannel.open();
-			Selector selector = Selector.open();
+			msc = ServerSocketChannel.open();
+			selector = Selector.open();
 			// msc는 메인 소켓 채널의 약자
 			if(!msc.isOpen())
 			{
@@ -87,8 +97,25 @@ public class Server {
 		catch (IOException e) 
 		{
 			e.printStackTrace();
-			//System.exit(1);
+			if(msc.isOpen())
+			{
+				closeServer();
+			}
 		}
+	}
+	public void closeServer() throws IOException {
+		Iterator<Entry<SocketChannel, List<byte[]>>> entries = clientChannel.entrySet().iterator();
+		while (entries.hasNext()) 
+		{
+			Entry<SocketChannel, List<byte[]>> entry = entries.next();
+		    SocketChannel key = (SocketChannel) entry.getKey();
+		    key.close();
+		}
+		if(msc != null && msc.isOpen())
+			msc.close();
+		if(selector != null && selector.isOpen())
+			selector.close();
+		System.out.println("Server down!!");
 	}
 	public boolean close(ServerSocketChannel serverS , Selector select ) 
 	{
@@ -121,7 +148,6 @@ public class Server {
 		int readNum = -1;
 		try {
 			SocketChannel socketC = (SocketChannel)key.channel();
-			buffer.clear();
 			readNum = socketC.read(buffer);
 			if(readNum == -1)
 			{
@@ -153,9 +179,11 @@ public class Server {
 				else if(sub.equals("[cp]"))
 				{
 					// 다른 클라이언트에게 받은 메세지 보내기 broadcast or multicast
-					System.out.println(" 읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
-					sendMessage( key, buffer.array());
+					System.out.println("읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
+					sendMessage(key, input);  // -> 널포인트 오류 뜸
 				}
+				buffer.compact();    // 버퍼 오버플로우 조심?
+				buffer.clear();
 			}
 		}
 		catch (Exception e) {
@@ -178,16 +206,53 @@ public class Server {
 		}
 		key.interestOps(SelectionKey.OP_READ);
 	}
-	private void sendMessage(SelectionKey key , byte[] data )       // 받은 데이터 다른 클라이언트들에게 전송   미완성 
+	public void sendMessage(SelectionKey key , String input) throws IOException       // 받은 데이터 다른 클라이언트들에게 전송   미완성 
 	{
 		SocketChannel socketC = (SocketChannel) key.channel();
+		//String dummy = input.split(":")[0];
+		String chatText = input;
+		//String dummy2 = input.split(":")[2];
+		Client sender = null;
 		
+		
+		System.out.println("받은 메세지 : "+ chatText + " 길이 : "+chatText.length());
+		for(int i=0;i<clientlist.size();i++)   // 될지 안될지 모름 
+		{
+			if(socketC.equals(clientlist.get(i).getSocketChannel()))
+			{
+				sender = clientlist.get(i);
+				break;
+			}
+		}
+		for(int i=0;i<clientlist.size();i++)
+		{
+			// 자기 자신에게 재전송하는거 방지
+			if((clientlist.get(i).getRoomCode() == sender.getRoomCode()) && (clientlist.get(i).isOnline()&& !(clientlist.get(i).getId().equals(sender.getId()))))
+			{
+				List<byte[]> updateClientData = clientChannel.get(clientlist.get(i).getSocketChannel());
+				updateClientData.add(chatText.getBytes());
+				key.interestOps(SelectionKey.OP_WRITE);
+				selector.wakeup();
+			}
+		}
+	}
+	public void sendRoomList(SelectionKey key)
+	{
+		String list="";
+		for(int i=0;i<roomList.size();i++)
+		{
+			list= list + roomList.get(i).getRoomName()+ ":";
+		}
+		System.out.println("보낼 room name list : "+ list);
+		SocketChannel socketC = (SocketChannel) key.channel();
+		List<byte[]> updateClientData = clientChannel.get(socketC);
+		updateClientData.add(list.getBytes());
 		key.interestOps(SelectionKey.OP_WRITE);
 	}
 	
-	
-	public void checkLogin(String input ,SelectionKey key )
+	public void checkLogin(String input ,SelectionKey key ) throws IOException
 	{
+		boolean flag = false;
 		SocketChannel socketC = (SocketChannel)key.channel();
 		String loginAcceptCode = "[[login success!!]]";
 		String loginRejectCode = "[[login fail!!]]";
@@ -196,15 +261,23 @@ public class Server {
 		String pw = input.split(":")[2];
 		System.out.println("로그인 요청 -> 입력받은 ID : "+ id + " 입력받은 PW : "+ pw);	
 		
-		// 해시 맵에서 클라이언트 있는지 찾아보기. 
-		if(clientInfo.containsKey(id)&&clientInfo.get(id).getPw().equals(pw))            // 클라이언트 있을때    이거 이상함 
+		// 클라이언트 있는지 찾아보기  있으면 id , pw 비교 
+		for(int i=0;i<clientlist.size();i++)
 		{
-			// 될지 안될지 모름   -> 클라이언트에게 로그인 답장 주는 코드 
-			List<byte[]> updateClientData = clientChannel.get(socketC);
-			updateClientData.add(loginAcceptCode.getBytes());
-			key.interestOps(SelectionKey.OP_WRITE);
+			if(clientlist.get(i).getId().equals(id)&&clientlist.get(i).getPw().equals(pw))           
+			{
+				// 클라이언트에게 로그인 답장 주는 코드 
+				Client c = clientlist.get(i);
+				c.setSocketChannel(socketC);     // 클라이언트 address 설정 
+				c.setOnline(true);
+				List<byte[]> updateClientData = clientChannel.get(socketC);
+				updateClientData.add(loginAcceptCode.getBytes());
+				key.interestOps(SelectionKey.OP_WRITE);
+				flag = true;
+				break;
+			}
 		}
-		else  // 없을때 
+		if(flag==false)  // 로그인 실패시 
 		{
 			List<byte[]> updateClientData = clientChannel.get(socketC);
 			updateClientData.add(loginRejectCode.getBytes());

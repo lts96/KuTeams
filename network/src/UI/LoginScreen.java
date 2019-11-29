@@ -49,7 +49,7 @@ public class LoginScreen
 		pw.setBounds(60, 60, 200, 30);
 		pw.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				loginCheck();
+				requestlogin();
 			}
 		});
 		panel.add(id);
@@ -60,7 +60,7 @@ public class LoginScreen
 		panel.add(submit);
 		submit.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				loginCheck();
+				requestlogin();
 			}
 		});
 		
@@ -76,17 +76,15 @@ public class LoginScreen
 		
 		frame.setVisible(flag);
 	}
-	public void loginCheck()
+	public void requestlogin()
 	{
-		String str;
 		String userId = "[lp]:"+id.getText();
 		String userPw = ":"+ new String(pw.getPassword())+":";
-		send.sendString(userId);
-		send.sendString(userPw);
-		recv.receiveString();
-		str = recv.receiveString();
+		send.sendString(userId + userPw);
+	}
+	public void recvLogin(String str)
+	{
 		System.out.println( "receive msg line 85 : "+ str);
-		
 		if(str.contains("[[login success!!]]")){
 			JOptionPane.showMessageDialog(null, "login success!");
 			flag = true;
@@ -98,8 +96,8 @@ public class LoginScreen
 			JOptionPane.showMessageDialog(null, "login fail!");
 		}
 	}
-	
-	
-	
-	
+	public void screenOn(boolean flag)
+	{
+		this.frame.setVisible(flag);
+	}
 }

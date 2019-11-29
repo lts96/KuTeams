@@ -81,4 +81,8 @@ public class LobbyScreen
 		// pis = new PrintInfoScreen(String name , String id , String pw , String addr , int time);
 		
 	}
+	public void screenOn(boolean flag)
+	{
+		this.frame.setVisible(flag);
+	}
 }

@@ -21,7 +21,7 @@ public class LobbyScreen
 	private PrintInfoScreen pis;
 	Sender s; 
 	
-	public LobbyScreen(boolean flag ,Sender s , CreateRoomScreen crs)
+	public LobbyScreen(boolean flag ,Sender s , CreateRoomScreen crs)  // ¹Ì¿Ï¼º 
 	{
 		this.crs = crs;
 		this.s = s;

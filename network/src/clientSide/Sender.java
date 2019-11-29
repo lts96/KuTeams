@@ -9,10 +9,7 @@ public class Sender
 {
 	private ByteBuffer buffer = ByteBuffer.allocate(1024);  // 문자열 전송용 
 	private SocketChannel socketC;
-	public Sender()
-	{
-		
-	}
+	
 	public Sender(SocketChannel s)
 	{
 		this.socketC = s;

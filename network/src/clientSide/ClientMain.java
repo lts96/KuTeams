@@ -21,6 +21,8 @@ public class ClientMain {
 	private static LoginScreen login;
 	private static LobbyScreen lobby;
 	private static CreateRoomScreen crs;
+	private static PrintInfoScreen pis;
+	private static RoomScreen rs;
 	public static void main(String[] args) throws IOException {
 		InetAddress local = InetAddress.getLocalHost();
 		final String ip = local.getHostAddress();   // ≥Î∆Æ∫œ ∑Œƒ√ ip 
@@ -41,8 +43,6 @@ public class ClientMain {
 			System.out.println("client socketChannel open fail!");
 			return;
 		}
-		PrintInfoScreen pis;
-		RoomScreen rs;
 		try {
 			sc.configureBlocking(false);
 			sc.setOption(StandardSocketOptions.SO_RCVBUF, 128*1024);
@@ -55,6 +55,7 @@ public class ClientMain {
 			Thread thread = new Thread() {
 				public void run()
 				{
+					
 					Sender send = new Sender(sc);
 					crs = new CreateRoomScreen(false , send);
 					lobby = new LobbyScreen(false, send , crs);

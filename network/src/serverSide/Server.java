@@ -173,7 +173,7 @@ public class Server {
 				{
 					signIn(input, key);
 				}
-				else if (sub.equals("[rc]"))  // room create
+				else if (sub.equals("[rc]"))  // room create ok 
 				{
 					Room r = createRoom(input , key);
 					if(r != null)

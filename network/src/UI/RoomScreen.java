@@ -35,7 +35,7 @@ public class RoomScreen {
 			}
 		});
 		frame.setVisible(true);
-		cs = new ChatScreen(s);
+		//cs = new ChatScreen(s);
 		screenShare();
 	}
 	public void screenShare()

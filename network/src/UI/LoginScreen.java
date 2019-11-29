@@ -72,8 +72,8 @@ public class LoginScreen
 		panel.add(signIn);
 		signIn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if(act)
-				signScreen = new SignScreen();
+				//if(act)
+				//signScreen = new SignScreen();
 				
 			}
 		});

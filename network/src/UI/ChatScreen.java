@@ -19,7 +19,7 @@ public class ChatScreen
 	private JTextArea chatlog;
 	private JScrollPane scroll;
 	Sender send;
-	public ChatScreen(Sender s)
+	public ChatScreen(boolean flag , Sender s)
 	{
 		this.send = s;
 		frame = new JFrame("채팅 화면");
@@ -61,7 +61,7 @@ public class ChatScreen
 		scroll.setBounds(30, 30,340, 350);
 		scroll.getViewport().setBackground(Color.white);
 		panel.add(scroll);
-		frame.setVisible(true);
+		frame.setVisible(flag);
 		panel.setVisible(true);
 	}
 	public void recvChat(String input) 
@@ -76,7 +76,6 @@ public class ChatScreen
 		send.sendString(userChat);
 		chat.setText("");
 		addChat(str , true);
-		
 	}
 	public void addChat(String s , boolean flag)
 	{

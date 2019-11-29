@@ -9,14 +9,14 @@ public class Client
 	private String id;
 	private String pw;
 	private int time;
-	private SocketChannel socketC;
+	private SocketChannel socketC;   // ? 
 	private int roomCode = -1;
 	private boolean online = false;
 	public Client()
 	{
 		
 	}
-	public Client(String name, String id , String pw )
+	public Client(String name, String id , String pw )   
 	{
 		this.setName(name);
 		this.setId(id);

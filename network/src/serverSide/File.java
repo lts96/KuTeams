@@ -23,7 +23,7 @@ public class File
 		try {
 			output.write(b);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			
 			e.printStackTrace();
 			System.out.println("file write fail!");
 		}

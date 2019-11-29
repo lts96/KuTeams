@@ -7,7 +7,6 @@ import java.awt.event.WindowEvent;
 
 import javax.swing.*;
 
-import clientSide.Receiver;
 import clientSide.Sender;
 public class LoginScreen
 {
@@ -20,11 +19,13 @@ public class LoginScreen
 	private JButton submit , signIn;
 	private JPanel panel;
 	private JLabel ID, pass;
-	Sender send;   Receiver recv;
-	public LoginScreen(boolean flag ,Sender s , Receiver r)
+	Sender send; 
+	private boolean act;
+	public LoginScreen(boolean flag ,Sender s , LobbyScreen screen)
 	{
+		this.screen = screen;
 		this.send = s;
-		this.recv = r;
+		act = flag;
 		frame = new JFrame("로그인 화면");
 		frame.setBounds(500, 500, 400, 300);
 		panel = new JPanel();
@@ -49,6 +50,7 @@ public class LoginScreen
 		pw.setBounds(60, 60, 200, 30);
 		pw.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if(act)
 				requestlogin();
 			}
 		});
@@ -60,6 +62,7 @@ public class LoginScreen
 		panel.add(submit);
 		submit.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if(act)
 				requestlogin();
 			}
 		});
@@ -69,6 +72,7 @@ public class LoginScreen
 		panel.add(signIn);
 		signIn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if(act)
 				signScreen = new SignScreen();
 				
 			}
@@ -84,20 +88,20 @@ public class LoginScreen
 	}
 	public void recvLogin(String str)
 	{
-		System.out.println( "receive msg line 85 : "+ str);
-		if(str.contains("[[login success!!]]")){
+		if(str.contains("[[login success]]")){
 			JOptionPane.showMessageDialog(null, "login success!");
 			flag = true;
 			frame.dispose();
-			screen = new LobbyScreen(flag , send , recv);
+			screen.screenOn(true);
 		}
-		else if(str.contains("[[login fail!!]]"))    // 여기까진 됨
+		else if(str.contains("[[login fail!!!]]"))    // 여기까진 됨
 		{
 			JOptionPane.showMessageDialog(null, "login fail!");
 		}
 	}
 	public void screenOn(boolean flag)
 	{
+		this.act = flag;
 		this.frame.setVisible(flag);
 	}
 }

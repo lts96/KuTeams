@@ -7,8 +7,6 @@ import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 
 import javax.swing.*;
-
-import clientSide.Receiver;
 import clientSide.Sender;
 public class LobbyScreen 
 {
@@ -22,11 +20,11 @@ public class LobbyScreen
 	private RoomScreen rs;
 	private PrintInfoScreen pis;
 	Sender s; 
-	Receiver r;
-	public LobbyScreen(boolean flag ,Sender s , Receiver r )
+	
+	public LobbyScreen(boolean flag ,Sender s , CreateRoomScreen crs)
 	{
+		this.crs = crs;
 		this.s = s;
-		this.r = r;
 		frame = new JFrame("메인 화면");
 		frame.setBounds(250, 150, 800, 600);
 		//frame.setLayout(new FlowLayout());
@@ -53,7 +51,7 @@ public class LobbyScreen
 		panel.add(b3);
 		b1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				crs = new CreateRoomScreen();
+				crs.screenOn(true);
 			}
 		});
 		
@@ -73,7 +71,7 @@ public class LobbyScreen
 	}
 	public void enterRoom()
 	{
-		rs = new RoomScreen("테스트용","아무개",4, s ,r); // 출력 테스트 용
+		rs = new RoomScreen("테스트용","아무개",4, s ); // 출력 테스트 용
 	}
 	public void printMyInfo()
 	{
@@ -84,5 +82,6 @@ public class LobbyScreen
 	public void screenOn(boolean flag)
 	{
 		this.frame.setVisible(flag);
+		this.panel.setVisible(flag);
 	}
 }

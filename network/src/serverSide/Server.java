@@ -19,6 +19,7 @@ import java.util.Scanner;
 import UI.LoginScreen;
 
 public class Server {
+	private static int roomCount = 0;
 	private ByteBuffer buffer = ByteBuffer.allocate(1024);
 	Map<SocketChannel, List<byte[]>> clientChannel = new HashMap<>();   // 채널마다 byte 배열 저장 필요 -> 메세지 뭐 왔나 저장용
 	List<Client> clientlist = new ArrayList<>();
@@ -27,7 +28,7 @@ public class Server {
 	Selector selector = null;
 	public void start() throws IOException 
 	{
-		final int default_port = 9999;     // 일단은 임의로 설정     // 기본적인 메세지는 이걸로 받음 , 대신 화면 전송은 다른 프로세스 or 다른 쓰레드 사용 
+		final int default_port = 8888;     // 일단은 임의로 설정     // 기본적인 메세지는 이걸로 받음 , 대신 화면 전송은 다른 프로세스 or 다른 쓰레드 사용 
 		
 		// 클라이언트 더미데이터 
 		Client c1 = new Client("이태선","client","1234");
@@ -38,7 +39,7 @@ public class Server {
 		clientlist.add(c3);
 		
 		// 룸 더미데이터 
-		Room r1 = new Room(roomList.size()+1,"test 룸","김철수");
+		Room r1 = new Room(-1,"test 룸","김철수" ,3);
 		
 		
 		System.out.println("[main server start!!]");
@@ -58,7 +59,7 @@ public class Server {
 			
 			msc.configureBlocking(false);
 			// 옵션값
-			msc.setOption(StandardSocketOptions.SO_RCVBUF, 128*1024);
+			msc.setOption(StandardSocketOptions.SO_RCVBUF, 256*1024);
 			msc.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 			
 			msc.bind(new InetSocketAddress(local , default_port));
@@ -161,7 +162,7 @@ public class Server {
 			else 
 			{
 				input = new String(buffer.array(),"UTF-8");
-				//System.out.println("길이 : "+size+" 읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
+				//System.out.println("읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
 				sub = input.substring(0, 4);
 				//System.out.println(sub);
 				if(sub.equals("[lp]"))  // 패킷 검사하기 (로그인인지 아닌지)
@@ -172,7 +173,21 @@ public class Server {
 				{
 					signIn(input, key);
 				}
-				else if(sub.equals("[rp]")) // 방 참가 요청 코드 
+				else if (sub.equals("[rc]"))  // room create
+				{
+					Room r = createRoom(input , key);
+					if(r != null)
+					{
+						roomList.add(r);
+						sendMsgToClient("[[rc success]]", key);
+					}
+					else 
+					{
+						sendMsgToClient("[[rc fail]]", key);
+					}
+				}
+				
+				else if(sub.equals("[ra]")) // 방 참가 요청 코드   room access
 				{
 					
 				}
@@ -200,7 +215,7 @@ public class Server {
 		while(it.hasNext()==true)
 		{
 			byte[] temp = it.next();
-			System.out.println("send to client -> "+ new String(temp));  // 뭐 보내는지 체크용 
+			System.out.println("send to "+ socketC.getRemoteAddress() +" "+ new String(temp));  // 뭐 보내는지 체크용 
 			socketC.write(ByteBuffer.wrap(temp));
 			it.remove();
 		}
@@ -236,6 +251,13 @@ public class Server {
 			}
 		}
 	}
+	public void sendMsgToClient(String str , SelectionKey key)
+	{
+		SocketChannel socketC = (SocketChannel)key.channel();
+		List<byte[]> updateClientData = clientChannel.get(socketC);
+		updateClientData.add(str.getBytes());
+		key.interestOps(SelectionKey.OP_WRITE);
+	}
 	public void sendRoomList(SelectionKey key)
 	{
 		String list="";
@@ -249,13 +271,12 @@ public class Server {
 		updateClientData.add(list.getBytes());
 		key.interestOps(SelectionKey.OP_WRITE);
 	}
-	
 	public void checkLogin(String input ,SelectionKey key ) throws IOException
 	{
 		boolean flag = false;
 		SocketChannel socketC = (SocketChannel)key.channel();
-		String loginAcceptCode = "[[login success!!]]";
-		String loginRejectCode = "[[login fail!!]]";
+		String loginAcceptCode = "[[login success]]";
+		String loginRejectCode = "[[login fail!!!]]";
 		String dummy = input.split(":")[0];
 		String id = input.split(":")[1];
 		String pw = input.split(":")[2];
@@ -288,8 +309,18 @@ public class Server {
 	{
 		
 	}
-	public void enterRoom()
+	public Room createRoom(String input ,SelectionKey key)
 	{
-		
+		Room r;
+		SocketChannel socketC = (SocketChannel)key.channel();
+		String dummy = input.split(":")[0];
+		String rname = input.split(":")[1];
+		String tname = input.split(":")[2];
+		String limit = input.split(":")[3];
+		int num = Integer.parseInt(limit); 
+		System.out.println("방 생성 요청 : "+ rname + " : "+ tname +" : "+ num);
+		r = new Room(roomCount+1 , rname , tname , num);
+		roomCount++;
+		return r; 
 	}
 }

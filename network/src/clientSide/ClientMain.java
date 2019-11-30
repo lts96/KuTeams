@@ -55,7 +55,6 @@ public class ClientMain {
 			Thread thread = new Thread() {
 				public void run()
 				{
-					
 					Sender send = new Sender(sc);
 					crs = new CreateRoomScreen(false , send);
 					lobby = new LobbyScreen(false, send , crs);
@@ -81,24 +80,34 @@ public class ClientMain {
 					{
 						input = new String(buffer.array(),"UTF-8");
 						//System.out.println("길이 : "+input.length()+" 읽은 값 : "+ input);
+						//System.out.println("길이 : "+sub.length()+"sub : "+ sub);
 						sub = input.substring(0, 4);
 						if(sub.equals("[[lo"))  // 패킷 검사하기 (로그인인지 아닌지)
 						{
 							sub = input.substring(0,17);
-							//System.out.println("길이 : "+sub.length()+"sub : "+ sub);
 							login.recvLogin(input);
 						}
 						else if(sub.equals("[[si"))   // 회원가입 검사 
 						{
 							
 						}
-						else if (sub.equals("[[rc")) // 방 생성 알려주는 코드 
+						else if (sub.equals("[[rc")) // 방 생성 결과 
 						{
-							crs.recvMsg(input);
+							if(crs.recvMsg(input))
+							{
+								
+							}
 						}
-						else if(sub.equals("[rp]")) // 방 참가 요청 코드 
+						else if(sub.equals("[lu]")) // lobbyScreen update 명령    방 추가 할땐 true  방 삭제 될땐 false
 						{
-							
+							lobby.updateScreenInfo(input , true);
+						}
+						else if(sub.equals("[[ra")) // 방 참가 요청 결과
+						{
+							if(input.contains("success"))
+							{
+								
+							}
 						}
 						else if(sub.equals("[cp]"))
 						{

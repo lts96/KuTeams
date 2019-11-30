@@ -19,7 +19,7 @@ import java.util.Scanner;
 import UI.LoginScreen;
 
 public class Server {
-	private static int roomCount = 0;
+	private static int roomCount = 1;
 	private ByteBuffer buffer = ByteBuffer.allocate(1024);
 	Map<SocketChannel, List<byte[]>> clientChannel = new HashMap<>();   // 채널마다 byte 배열 저장 필요 -> 메세지 뭐 왔나 저장용
 	List<Client> clientlist = new ArrayList<>();
@@ -39,8 +39,8 @@ public class Server {
 		clientlist.add(c3);
 		
 		// 룸 더미데이터 
-		Room r1 = new Room(-1,"test 룸","김철수" ,3);
-		
+		Room r1 = new Room(-1,"test","김철수" ,3);
+		roomList.add(r1);
 		
 		System.out.println("[main server start!!]");
 		//System.out.println("서버 포트 번호 입력 : ");
@@ -145,7 +145,7 @@ public class Server {
 	}
 	private void readKey(SelectionKey key) throws IOException  // read 가능할때 
 	{
-		String input="" ,sub;
+		String input="" ,token;
 		int readNum = -1;
 		try {
 			SocketChannel socketC = (SocketChannel)key.channel();
@@ -163,35 +163,49 @@ public class Server {
 			{
 				input = new String(buffer.array(),"UTF-8");
 				//System.out.println("읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
-				sub = input.substring(0, 4);
+				token = input.substring(0, 4);
 				//System.out.println(sub);
-				if(sub.equals("[lp]"))  // 패킷 검사하기 (로그인인지 아닌지)
+				if(token.equals("[lp]"))  // 패킷 검사하기 (로그인인지 아닌지)
 				{
 					checkLogin(input,key);
 				}
-				else if(sub.equals("[sp]"))  // 회원가입인지 아닌지    signin packet
+				else if(token.equals("[sp]"))  // 회원가입인지 아닌지    signin packet
 				{
 					signIn(input, key);
 				}
-				else if (sub.equals("[rc]"))  // room create ok
+				else if (token.equals("[rc]"))  // room create 
 				{
 					Room r = createRoom(input , key);
-					if(r != null)
+					if(r != null)   // 방이 제대로 생성되었을때 
 					{
 						roomList.add(r);
 						sendMsgToClient("[[rc success]]", key);
+						sendMsgToClient("[lu]:"+r.getRoomName()+":"+r.getClientList().size()+":"+r.getLimit()+":",key);
+						for(int i=0;i<clientlist.size();i++)
+						{
+							if(clientlist.get(i).getSocketChannel()!=null&& clientlist.get(i).getSocketChannel().equals(socketC))
+							{
+								clientlist.get(i).setRoomCode(r.getRoomCode());
+								r.addClient(clientlist.get(i));
+								System.out.println("클라이언트 "+ clientlist.get(i).getName()+"님이 "+r.getRoomName()+" 방에 입장");
+								break;
+							}
+						}
+						// 클라이언트 쪽  방 리스트 정보 업데이트 용 
 					}
-					else 
+					else  // 생성에 실패했을때 
 					{
 						sendMsgToClient("[[rc fail]]", key);
 					}
 				}
-				
-				else if(sub.equals("[ra]")) // 방 참가 요청 코드   room access
+				else if(token.equals("[ra]")) // 방 참가 요청 코드   room access
 				{
-					
+					if(enterRoom(input))
+						sendMsgToClient("[[ra success]]", key);
+					else 
+						sendMsgToClient("[[ra fail!!!]]", key);
 				}
-				else if(sub.equals("[cp]"))
+				else if(token.equals("[cp]"))
 				{
 					// 다른 클라이언트에게 받은 메세지 보내기 broadcast or multicast
 					System.out.println("읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
@@ -251,11 +265,11 @@ public class Server {
 			}
 		}
 	}
-	public void sendMsgToClient(String str , SelectionKey key)
+	public void sendMsgToClient(String str , SelectionKey key) throws UnsupportedEncodingException       // ok
 	{
 		SocketChannel socketC = (SocketChannel)key.channel();
 		List<byte[]> updateClientData = clientChannel.get(socketC);
-		updateClientData.add(str.getBytes());
+		updateClientData.add(str.getBytes("UTF-8"));
 		key.interestOps(SelectionKey.OP_WRITE);
 	}
 	public void sendRoomList(SelectionKey key)
@@ -309,18 +323,47 @@ public class Server {
 	{
 		
 	}
+	public boolean enterRoom(String input)
+	{
+		String token = input.split(":")[0];
+		String rname = input.split(":")[1];
+		for(int i=0;i<roomList.size();i++)
+		{
+			if(roomList.get(i).getRoomName().equals(rname))
+			{
+				System.out.println("방 입장 요청 -> 승인됨");
+				return true;
+			}
+		}
+		return false;
+	}
 	public Room createRoom(String input ,SelectionKey key)
 	{
 		Room r;
+		boolean flag = true;
 		SocketChannel socketC = (SocketChannel)key.channel();
-		String dummy = input.split(":")[0];
+		String token = input.split(":")[0];
 		String rname = input.split(":")[1];
 		String tname = input.split(":")[2];
 		String limit = input.split(":")[3];
 		int num = Integer.parseInt(limit); 
-		System.out.println("방 생성 요청 : "+ rname + " : "+ tname +" : "+ num);
-		r = new Room(roomCount+1 , rname , tname , num);
-		roomCount++;
-		return r; 
+		System.out.println("방 생성 요청 ->"+ rname + ","+ tname +","+ num);
+		for(int i=0;i<roomList.size();i++)
+		{
+			if(roomList.get(i).getRoomName().equals(rname))
+			{
+				System.out.println("방 생성 실패-> 이름이 중복됨");
+				flag = false;
+				break;
+			}
+		}
+		if(flag)
+		{
+			r = new Room(roomCount+1 , rname , tname , num);
+			roomCount++;
+			return r; 
+		}
+		else 
+			return null;
 	}
 }

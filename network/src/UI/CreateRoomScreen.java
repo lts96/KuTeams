@@ -65,20 +65,21 @@ public class CreateRoomScreen
 	}
 	public void submitRoom()
 	{
-		//System.out.println("规 父甸扁!!");
 		String str = "[rc]:"+rName.getText()+":"+tName.getText()+":"+sNum.getText()+":";
 		send.sendString(str);
 	}
-	public void recvMsg(String str)
+	public boolean recvMsg(String str)
 	{
 		if(str.contains("[[rc success]]"))
 		{
 			JOptionPane.showMessageDialog(null, "规 积己 己傍!");
 			frame.dispose();
+			return true;
 		}
 		else 
 		{
 			JOptionPane.showMessageDialog(null, "规 积己 角菩!");
+			return false;
 		}
 	}
 	public void screenOn(boolean flag)

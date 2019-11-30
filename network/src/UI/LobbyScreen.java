@@ -10,15 +10,18 @@ import javax.swing.*;
 import clientSide.Sender;
 public class LobbyScreen 
 {
-	private ArrayList<String> roomList = new ArrayList<String>();
+	private ArrayList<RoomInfo> roomInfoList = new ArrayList<RoomInfo>();
 	private JFrame frame;
 	private JButton b1,b2,b3;
 	private JPanel panel;
-	private JLabel infor;
+	private JLabel infor, enter;
+	private JTextField roomName;
 	private int x = 80;
 	private CreateRoomScreen crs;
 	private RoomScreen rs;
 	private PrintInfoScreen pis;
+	private JTextArea roomlist;
+	private JScrollPane scroll;
 	Sender s; 
 	
 	public LobbyScreen(boolean flag ,Sender s , CreateRoomScreen crs)  // 미완성.
@@ -30,6 +33,7 @@ public class LobbyScreen
 		//frame.setLayout(new FlowLayout());
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
+				// 현재  연결 하나 끊으면 서버가 닫혀버리는 버그 있음? 
 				System.exit(0);
 			}
 		});
@@ -44,6 +48,23 @@ public class LobbyScreen
 		b3.setBounds(x+500, 10,150, 100);
 		infor = new JLabel("현재 개설된 강의 목록");
 		infor.setBounds(x , 130 , 200 , 40);
+		
+		roomlist = new JTextArea();
+		roomlist.setBounds(x,180,400, 350);
+		panel.add(roomlist);
+		
+		scroll = new JScrollPane(roomlist);
+		scroll.setBounds(x,180,400, 350);
+		scroll.getViewport().setBackground(Color.white);
+		panel.add(scroll);
+
+		enter = new JLabel("들어갈 방 이름 입력");
+		enter.setBounds(500,130,150,40);
+		panel.add(enter);
+		
+		roomName = new JTextField();
+		roomName.setBounds(500,180,200,45);
+		panel.add(roomName);
 		
 		panel.add(infor);
 		panel.add(b1);
@@ -71,13 +92,33 @@ public class LobbyScreen
 	}
 	public void enterRoom()
 	{
-		rs = new RoomScreen("테스트용","아무개",4, s ); // 출력 테스트 용
+		String enterRequest = roomName.getText();
+		s.sendString("[ra]:"+enterRequest+":");
 	}
 	public void printMyInfo()
 	{
 		// 서버한테서 내 정보 받아옴 -> 생성자 통해서 내 정보 출력해주는 화면 생성 
 		// pis = new PrintInfoScreen(String name , String id , String pw , String addr , int time);
 		
+	}
+	public void updateScreenInfo(String input , boolean flag )   // 더하는 것 뿐만아니라 지우는 것도 가능해야함 , 그리고 실시간으로 방 입장할때마다 인원 변화 시켜야됨 
+	{
+		if(flag)   //room list 추가시 
+		{
+			System.out.println("input : "+ input);
+			String token = input.split(":")[0];
+			String rname = input.split(":")[1];
+			String count = input.split(":")[2];
+			String limit = input.split(":")[3];
+			RoomInfo r = new RoomInfo(rname,count,limit);
+			roomInfoList.add(r);
+			roomlist.append("[방 이름 : "+ rname +"    현재 인원 :  "+count+"    인원 제한 :  "+limit +"]\n");
+			roomlist.setCaretPosition(roomlist.getDocument().getLength());
+		}
+		else 
+		{
+			
+		}
 	}
 	public void screenOn(boolean flag)
 	{

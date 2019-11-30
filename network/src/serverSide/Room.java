@@ -8,7 +8,7 @@ public class Room
 	private int roomCode;
 	private String roomName;
 	private String teacher;
-	private int limit = 3;
+	private int limit;
 	private List<Client> clientList = new ArrayList<Client>();
 	
 	public Room(int code, String name , String tname , int limit)  
@@ -18,7 +18,9 @@ public class Room
 		this.teacher = tname;
 		this.limit = limit;
 	}
-	
+	public int getLimit() {
+		return this.limit;
+	}
 	public String getRoomName() {
 		return roomName;
 	}

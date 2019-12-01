@@ -26,7 +26,7 @@ public class Server {
 	List<Room> roomList = new ArrayList<>();
 	ServerSocketChannel msc = null;
 	Selector selector = null;
-	public void start() throws IOException 
+	public void start() 
 	{
 		final int default_port = 8888;     // 일단은 임의로 설정     // 기본적인 메세지는 이걸로 받음 , 대신 화면 전송은 다른 프로세스 or 다른 쓰레드 사용 
 		
@@ -39,7 +39,7 @@ public class Server {
 		clientlist.add(c3);
 		
 		// 룸 더미데이터 
-		Room r1 = new Room(-1,"test","김철수" ,3);
+		Room r1 = new Room(1,"test","김철수" ,3);
 		roomList.add(r1);
 		
 		System.out.println("[main server start!!]");
@@ -97,10 +97,15 @@ public class Server {
 		}
 		catch (IOException e) 
 		{
-			e.printStackTrace();
+			System.out.println("server.java 100 line catch");
 			if(msc.isOpen())
 			{
-				closeServer();
+				try {
+					closeServer();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					System.out.println("server.java 107 line catch");
+				}
 			}
 		}
 	}
@@ -200,16 +205,17 @@ public class Server {
 				}
 				else if(token.equals("[ra]")) // 방 참가 요청 코드   room access
 				{
-					if(enterRoom(input))
-						sendMsgToClient("[[ra success]]", key);
+					int code = enterRoom(input);
+					if(code > 0)
+						sendMsgToClient("[[ra success]]:"+code +":", key);
 					else 
 						sendMsgToClient("[[ra fail!!!]]", key);
 				}
 				else if(token.equals("[cp]"))
 				{
-					// 다른 클라이언트에게 받은 메세지 보내기 broadcast or multicast
+					// 다른 클라이언트에게 받은 메세지 보내기
 					System.out.println("읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
-					sendMessage(key, input);  // -> 널포인트 오류 뜸
+					sendMessage(key, input);
 				}
 				buffer.compact();    // 버퍼 오버플로우 조심?
 				buffer.clear();
@@ -238,13 +244,12 @@ public class Server {
 	public void sendMessage(SelectionKey key , String input) throws IOException       // 받은 데이터 다른 클라이언트들에게 전송   미완성 
 	{
 		SocketChannel socketC = (SocketChannel) key.channel();
-		//String dummy = input.split(":")[0];
-		String chatText = input;
-		//String dummy2 = input.split(":")[2];
 		Client sender = null;
-		
-		
-		System.out.println("받은 메세지 : "+ chatText + " 길이 : "+chatText.length());
+		String tok = input.split(":")[0];
+		String chatText = input.split(":")[1];
+		String roomCode = input.split(":")[2];
+		int code = Integer.parseInt(roomCode);
+		//System.out.println("길이 : "+chatText.length()+" 받은 메세지 : "+ chatText );
 		for(int i=0;i<clientlist.size();i++)   // 될지 안될지 모름 
 		{
 			if(socketC.equals(clientlist.get(i).getSocketChannel()))
@@ -253,15 +258,23 @@ public class Server {
 				break;
 			}
 		}
-		for(int i=0;i<clientlist.size();i++)
+		if(sender != null)
 		{
-			// 자기 자신에게 재전송하는거 방지
-			if((clientlist.get(i).getRoomCode() == sender.getRoomCode()) && (clientlist.get(i).isOnline()&& !(clientlist.get(i).getId().equals(sender.getId()))))
+			chatText = "[cp]:"+chatText +":" +sender.getName()+":";
+			//System.out.println("chat : "+ chatText);
+			for(int i=0;i<clientlist.size();i++)
 			{
-				List<byte[]> updateClientData = clientChannel.get(clientlist.get(i).getSocketChannel());
-				updateClientData.add(chatText.getBytes());
-				key.interestOps(SelectionKey.OP_WRITE);
-				selector.wakeup();
+				// 자기 자신에게 재전송하는거 방지
+				if((clientlist.get(i).getRoomCode() == code) && !(clientlist.get(i).getId().equals(sender.getId())))
+				{
+					SocketChannel target = clientlist.get(i).getSocketChannel();
+					if(target!=null)
+					{
+						System.out.println(sender.getName()+"님이 "+clientlist.get(i).getName() +"에게");
+						SelectionKey targetKey = target.keyFor(selector);
+						sendMsgToClient(chatText,targetKey);
+					}
+				}
 			}
 		}
 	}
@@ -291,7 +304,7 @@ public class Server {
 		SocketChannel socketC = (SocketChannel)key.channel();
 		String loginAcceptCode = "[[login success]]";
 		String loginRejectCode = "[[login fail!!!]]";
-		String dummy = input.split(":")[0];
+		String token = input.split(":")[0];
 		String id = input.split(":")[1];
 		String pw = input.split(":")[2];
 		System.out.println("로그인 요청 -> 입력받은 ID : "+ id + " 입력받은 PW : "+ pw);	
@@ -323,7 +336,7 @@ public class Server {
 	{
 		
 	}
-	public boolean enterRoom(String input)
+	public int enterRoom(String input)
 	{
 		String token = input.split(":")[0];
 		String rname = input.split(":")[1];
@@ -332,10 +345,10 @@ public class Server {
 			if(roomList.get(i).getRoomName().equals(rname))
 			{
 				System.out.println("방 입장 요청 -> 승인됨");
-				return true;
+				return roomList.get(i).getRoomCode();
 			}
 		}
-		return false;
+		return -1;
 	}
 	public Room createRoom(String input ,SelectionKey key)
 	{

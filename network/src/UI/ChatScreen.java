@@ -7,10 +7,13 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 import javax.swing.*;
+
+import clientSide.ClientMain;
 import clientSide.Sender;
 
 public class ChatScreen 
 {
+	private boolean act;
 	private JFrame frame;
 	private JTextField chat;
 	private JButton submit;
@@ -21,6 +24,7 @@ public class ChatScreen
 	Sender send;
 	public ChatScreen(boolean flag , Sender s)
 	{
+		this.act = flag;
 		this.send = s;
 		frame = new JFrame("채팅 화면");
 		frame.setBounds(900, 300, 400, 500);
@@ -40,6 +44,7 @@ public class ChatScreen
 		panel.add(chat);
 		chat.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if(act)
 				sendChat();
 			}
 		});
@@ -49,6 +54,7 @@ public class ChatScreen
 		panel.add(submit);
 		submit.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if(act)
 				sendChat();
 			}
 		});
@@ -72,7 +78,7 @@ public class ChatScreen
 	public void sendChat()
 	{
 		String str = chat.getText();
-		String userChat = "[cp]:"+chat.getText()+":";
+		String userChat = "[cp]:"+chat.getText()+":"+ClientMain.roomCode+":";
 		send.sendString(userChat);
 		chat.setText("");
 		addChat(str , true);
@@ -82,11 +88,23 @@ public class ChatScreen
 		if(flag)
 			chatlog.append("[보낸 메세지]: "+s+"\n");
 		else
-			chatlog.append("[받은 메세지]: "+s+"\n");
+		{
+			String tok = s.split(":")[0];
+			String chatText = s.split(":")[1];
+			String name = s.split(":")[2];
+			chatlog.append("["+name+" 님의 메세지]:"+chatText+"\n");
+		}
 		chatlog.setCaretPosition(chatlog.getDocument().getLength());
 	}
 	public void screenOn(boolean flag)
 	{
+		this.act = flag;
 		this.frame.setVisible(flag);
+		chatlog.setText("");
+		chat.setText("");
+	}
+	public boolean isAct()
+	{
+		return this.act;
 	}
 }

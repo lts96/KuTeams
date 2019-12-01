@@ -7,9 +7,10 @@ import java.awt.event.WindowEvent;
 
 import javax.swing.*;
 
-import clientSide.Sender;
+import clientSide.*;
 public class CreateRoomScreen 
 {
+	private boolean act;
 	private JFrame frame;
 	private JButton submit;
 	private JTextField rName, tName , sNum;
@@ -18,6 +19,7 @@ public class CreateRoomScreen
 	private Sender send;
 	public CreateRoomScreen(boolean flag ,Sender s)   // 잘됨.
 	{
+		this.act = flag;
 		this.send = s;
 		frame = new JFrame("방 만들기");
 		frame.setBounds(300, 200, 400, 300);
@@ -26,7 +28,11 @@ public class CreateRoomScreen
 		frame.add(panel);
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
+				rName.setText("");
+				tName.setText("");
+				sNum.setText("");
 				frame.setVisible(false);
+				act = false;
 			}
 		});
 		
@@ -44,6 +50,7 @@ public class CreateRoomScreen
 		submit.setBounds(280, 40, 60, 60);
 		submit.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if(act)
 				submitRoom();
 			}
 		});
@@ -73,6 +80,9 @@ public class CreateRoomScreen
 		if(str.contains("[[rc success]]"))
 		{
 			JOptionPane.showMessageDialog(null, "방 생성 성공!");
+			String token = str.split(":")[0];
+			String code = str.split(":")[1];
+			ClientMain.roomCode = Integer.parseInt(code);
 			frame.dispose();
 			return true;
 		}
@@ -85,5 +95,6 @@ public class CreateRoomScreen
 	public void screenOn(boolean flag)
 	{
 		this.frame.setVisible(flag);
+		this.act = flag;
 	}
 }

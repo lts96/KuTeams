@@ -24,12 +24,12 @@ public class Sender
 			try {
 				socketC.write(buffer);
 			} catch (IOException e) {
-				e.printStackTrace();
+				System.out.println("sender line 27 catch");
 				return !flag;
 			}
 			
 		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
+			System.out.println("sender line 32 catch");
 			return !flag;
 		}
 		return flag;

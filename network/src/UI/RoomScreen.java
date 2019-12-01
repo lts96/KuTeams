@@ -6,6 +6,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 import javax.swing.*;
+
+import clientSide.ClientMain;
 import clientSide.Sender;
 public class RoomScreen {
 	private JFrame frame;
@@ -31,6 +33,7 @@ public class RoomScreen {
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
 				// 나중에 따로 close 함수 만들어서 바꿔야됨
+				ClientMain.roomCode = -1;
 				System.exit(0);
 			}
 		});

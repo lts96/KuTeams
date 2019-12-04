@@ -78,7 +78,15 @@ public class ChatScreen
 	public void sendChat()
 	{
 		String str = chat.getText();
-		String userChat = "[cp]:"+chat.getText()+":"+ClientMain.roomCode+":";
+		String userChat = "[ch]:"+chat.getText()+":"+ClientMain.roomCode+":";
+		send.sendString(userChat);
+		chat.setText("");
+		addChat(str , true);
+	}
+	public void sendWhisper()   // 형식    [cw]:이름:내용:roomCode 
+	{
+		String str = chat.getText();
+		String userChat = "[cw]:"+chat.getText()+":"+ClientMain.roomCode+":";
 		send.sendString(userChat);
 		chat.setText("");
 		addChat(str , true);

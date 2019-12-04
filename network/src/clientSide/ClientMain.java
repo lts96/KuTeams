@@ -67,13 +67,13 @@ public class ClientMain {
 			};
 			thread.start();
 			// receive 하는 부분 
+			SocketChannel socketC = sc;
 			while(true)
 			{
 				String input,sub;
 				String parse;
 				int readNum = -1;
 				try {
-					SocketChannel socketC = sc;
 					readNum = socketC.read(buffer);
 					if(readNum == -1)
 					{
@@ -96,19 +96,24 @@ public class ClientMain {
 						}
 						else if (sub.equals("[[rc")) // 방 생성 결과 
 						{
-							if(crs.recvMsg(input))
-							{
-								
-							}
+							crs.recvMsg(input);
 						}
-						else if(sub.equals("[lu]")) // lobbyScreen update 명령    방 추가 할땐 true  방 삭제 될땐 false
+						else if(sub.equals("[ri]"))
 						{
-							lobby.updateScreenInfo(input , true);
+							lobby.addScreenInfo(input, true);
+						}
+						else if(sub.equals("[ru]")) // lobbyScreen update 명령    방 추가 할땐 true  방 삭제 될땐 false
+						{
+							lobby.updateScreenInfo(input, true);
 						}
 						else if(sub.equals("[[ra")) // 방 참가 요청 결과
 						{
 							if(input.contains("success"))     // 채팅과 화면 전송 시작 
-								chat.screenOn(true); 
+								chat.screenOn(true);
+							else
+							{
+								lobby.failRoomAccess(input);
+							}
 						}
 						else if(sub.equals("[cp]"))
 						{

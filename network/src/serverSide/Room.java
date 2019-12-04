@@ -7,15 +7,15 @@ public class Room
 {
 	private int roomCode;
 	private String roomName;
-	private String teacher;
+	private String host;
 	private int limit;
 	private List<Client> clientList = new ArrayList<Client>();
 	
-	public Room(int code, String name , String tname , int limit)  
+	public Room(int code, String name , String host , int limit)  
 	{
 		this.roomCode = code;
 		this.roomName = name; 
-		this.teacher = tname;
+		this.setHost(host);
 		this.limit = limit;
 	}
 	public int getLimit() {
@@ -90,5 +90,11 @@ public class Room
 	public int clientNum()
 	{
 		return clientList.size();
+	}
+	public String getHost() {
+		return host;
+	}
+	public void setHost(String host) {
+		this.host = host;
 	}
 }

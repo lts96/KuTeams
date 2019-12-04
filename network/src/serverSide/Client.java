@@ -54,7 +54,7 @@ public class Client
 	public void setRoomCode(int roomCode) {
 		this.roomCode = roomCode;
 	}
-	public boolean isOnline() {
+	public boolean getOnline() {
 		return online;
 	}
 	public void setOnline(boolean online) {

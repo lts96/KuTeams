@@ -26,6 +26,7 @@ public class Server {
 	List<Room> roomList = new ArrayList<>();
 	ServerSocketChannel msc = null;
 	Selector selector = null;
+	ServerSocket serverSocket = null;
 	public void start() 
 	{
 		final int default_port = 8888;     // 일단은 임의로 설정     // 기본적인 메세지는 이걸로 받음 , 대신 화면 전송은 다른 프로세스 or 다른 쓰레드 사용 
@@ -178,14 +179,25 @@ public class Server {
 				{
 					signIn(input, key);
 				}
-				else if (token.equals("[rc]"))  // room create 
+				else if(token.equals("[ch]"))   // 채팅 메세지 
+				{
+					// 다른 클라이언트에게 받은 메세지 보내기
+					System.out.println("메세지 : "+ input + " by "+ socketC.getRemoteAddress());
+					sendMessage(key, input);
+				}
+				else if(token.equals("[cw]"))    // 귓속말 처리 
+				{
+					System.out.println("메세지 : "+ input + " by "+ socketC.getRemoteAddress());
+					sendMessage(key, input);
+				}
+				else if (token.equals("[rc]"))  // 방 생성 요청 
 				{
 					Room r = createRoom(input , key);
 					if(r != null)   // 방이 제대로 생성되었을때 
 					{
 						roomList.add(r);
-						sendMsgToClient("[[rc success]]", key);
-						sendMsgToClient("[lu]:"+r.getRoomName()+":"+r.getClientList().size()+":"+r.getLimit()+":",key);
+						sendMsgToClient("[[rc success]]:"+r.getRoomCode()+":", key);
+						sendMsgToClient("[ri]:"+r.getRoomName()+":"+r.getClientList().size()+":"+r.getLimit()+":",key);
 						for(int i=0;i<clientlist.size();i++)
 						{
 							if(clientlist.get(i).getSocketChannel()!=null&& clientlist.get(i).getSocketChannel().equals(socketC))
@@ -207,15 +219,22 @@ public class Server {
 				{
 					int code = enterRoom(input);
 					if(code > 0)
-						sendMsgToClient("[[ra success]]:"+code +":", key);
-					else 
-						sendMsgToClient("[[ra fail!!!]]", key);
+						sendMsgToClient("[[ra success]]:"+code +":", key);    // 방 입장 성공
+					else if (code == -1)       //
+						sendMsgToClient("[[ra fail]] \n room is not exist:", key);   // 입장 실패 -> 방 못찾음
+					else if (code == -2)
+						sendMsgToClient("[[ra fail]] \n room is already full:", key); // 입장 실패 -> 인원 제한 걸림
 				}
-				else if(token.equals("[cp]"))
+				else if(token.equals("[rl]"))  // 방 리스트 요청 
 				{
-					// 다른 클라이언트에게 받은 메세지 보내기
-					System.out.println("읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
-					sendMessage(key, input);
+					String str = "[ru]:"+roomList.size()+":";
+					Room r;
+					for(int i=0;i<roomList.size();i++)
+					{
+						r= roomList.get(i);
+						str += r.getRoomName()+":"+r.getClientList().size()+":"+r.getLimit()+":";
+					}
+					sendMsgToClient(str,key);
 				}
 				buffer.compact();    // 버퍼 오버플로우 조심?
 				buffer.clear();
@@ -278,6 +297,43 @@ public class Server {
 			}
 		}
 	}
+	public void sendWhisper(SelectionKey key ,String input) throws UnsupportedEncodingException 
+	{
+		SocketChannel socketC = (SocketChannel) key.channel();
+		Client sender = null;
+		String tok = input.split(":")[0];
+		String name = input.split(":")[1];
+		String chatText = input.split(":")[2];
+		String roomCode = input.split(":")[3];
+		int code = Integer.parseInt(roomCode);
+		for(int i=0;i<clientlist.size();i++)   
+		{
+			if(socketC.equals(clientlist.get(i).getSocketChannel()))
+			{
+				sender = clientlist.get(i);
+				break;
+			}
+		}
+		if(sender != null)
+		{
+			chatText = "[cp]:"+chatText +":" +sender.getName()+":";
+			//System.out.println("chat : "+ chatText);
+			for(int i=0;i<clientlist.size();i++)
+			{
+				// 자기 자신에게 재전송하는거 방지
+				if((clientlist.get(i).getRoomCode() == code) && (clientlist.get(i).getName().equals(name)))
+				{
+					SocketChannel target = clientlist.get(i).getSocketChannel();
+					if(target!=null)
+					{
+						System.out.println(sender.getName()+"님이 "+clientlist.get(i).getName() +"에게");
+						SelectionKey targetKey = target.keyFor(selector);
+						sendMsgToClient(chatText,targetKey);
+					}
+				}
+			}
+		}
+	}
 	public void sendMsgToClient(String str , SelectionKey key) throws UnsupportedEncodingException       // ok
 	{
 		SocketChannel socketC = (SocketChannel)key.channel();
@@ -303,7 +359,7 @@ public class Server {
 		boolean flag = false;
 		SocketChannel socketC = (SocketChannel)key.channel();
 		String loginAcceptCode = "[[login success]]";
-		String loginRejectCode = "[[login fail!!!]]";
+		int errorCode = 0;
 		String token = input.split(":")[0];
 		String id = input.split(":")[1];
 		String pw = input.split(":")[2];
@@ -316,8 +372,14 @@ public class Server {
 			{
 				// 클라이언트에게 로그인 답장 주는 코드 
 				Client c = clientlist.get(i);
+				if(!c.getOnline())         // 이미 접속했는지 아닌지 체크
+					c.setOnline(true);
+				else 
+				{
+					errorCode = 1;
+					break;
+				}
 				c.setSocketChannel(socketC);     // 클라이언트 address 설정 
-				c.setOnline(true);
 				List<byte[]> updateClientData = clientChannel.get(socketC);
 				updateClientData.add(loginAcceptCode.getBytes());
 				key.interestOps(SelectionKey.OP_WRITE);
@@ -327,8 +389,13 @@ public class Server {
 		}
 		if(flag==false)  // 로그인 실패시 
 		{
+			String errorMsg="[[login fail]]";
+			if(errorCode == 0)
+				errorMsg += "\nid or pw wrong:";
+			else
+				errorMsg += "\nalready connect:";
 			List<byte[]> updateClientData = clientChannel.get(socketC);
-			updateClientData.add(loginRejectCode.getBytes());
+			updateClientData.add(errorMsg.getBytes());
 			key.interestOps(SelectionKey.OP_WRITE);
 		}
 	}
@@ -340,15 +407,22 @@ public class Server {
 	{
 		String token = input.split(":")[0];
 		String rname = input.split(":")[1];
+		Room temp;
 		for(int i=0;i<roomList.size();i++)
 		{
-			if(roomList.get(i).getRoomName().equals(rname))
+			temp = roomList.get(i);
+			if(temp.getRoomName().equals(rname))
 			{
-				System.out.println("방 입장 요청 -> 승인됨");
-				return roomList.get(i).getRoomCode();
+				if(temp.getClientList().size()< temp.getLimit())   // 방은 있는데 자리가 없어서 못들어갈때 
+				{
+					System.out.println("["+temp.getRoomName()+"]방 입장 요청 -> 승인됨");
+					return temp.getRoomCode();
+				}
+				else 
+					return -2;
 			}
 		}
-		return -1;
+		return -1;  // 방을 못찾았을때 
 	}
 	public Room createRoom(String input ,SelectionKey key)
 	{

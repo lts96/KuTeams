@@ -12,7 +12,7 @@ public class LobbyScreen
 {
 	private ArrayList<RoomInfo> roomInfoList = new ArrayList<RoomInfo>();
 	private JFrame frame;
-	private JButton b1,b2,b3;
+	private JButton b1,b2,b3 , refresh;
 	private JPanel panel;
 	private JLabel infor, enter;
 	private JTextField roomName;
@@ -48,6 +48,8 @@ public class LobbyScreen
 		b3.setBounds(x+500, 10,150, 100);
 		infor = new JLabel("현재 개설된 강의 목록");
 		infor.setBounds(x , 130 , 200 , 40);
+		refresh = new JButton("새로고침");
+		refresh.setBounds(x+300, 140, 100, 40);
 		
 		roomlist = new JTextArea();
 		roomlist.setBounds(x,180,400, 350);
@@ -70,6 +72,7 @@ public class LobbyScreen
 		panel.add(b1);
 		panel.add(b2);
 		panel.add(b3);
+		panel.add(refresh);
 		b1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				crs.screenOn(true);
@@ -87,13 +90,29 @@ public class LobbyScreen
 				printMyInfo();
 			}
 		});
+		
+		refresh.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				requestRoomList();
+			}
+		});
 		frame.setVisible(flag);
 		panel.setVisible(flag);
+	}
+	public void requestRoomList() 
+	{
+		roomlist.setText("");
+		s.sendString("[rl]");
 	}
 	public void enterRoom()
 	{
 		String enterRequest = roomName.getText();
 		s.sendString("[ra]:"+enterRequest+":");
+	}
+	public void failRoomAccess(String str)
+	{
+		String sub = str.split(":")[0];
+		JOptionPane.showMessageDialog(null, sub);
 	}
 	public void printMyInfo()
 	{
@@ -105,19 +124,34 @@ public class LobbyScreen
 	{
 		if(flag)   //room list 추가시 
 		{
-			System.out.println("input : "+ input);
+			System.out.println("room : "+ input);
+			String token = input.split(":")[0];
+			int num = Integer.parseInt(input.split(":")[1]);
+			for(int i=0;i<num;i++)
+			{
+				String rname = input.split(":")[i*3+2];
+				String count = input.split(":")[i*3+3];
+				String limit = input.split(":")[i*3+4];
+				//RoomInfo r = new RoomInfo(rname,count,limit);
+				//roomInfoList.add(r);
+				roomlist.append("[방 이름 : "+ rname +"    현재 인원 :  "+count+"    인원 제한 :  "+limit +"]\n");
+				roomlist.setCaretPosition(roomlist.getDocument().getLength());
+			}
+		}
+	}
+	public void addScreenInfo(String input, boolean flag)
+	{
+		if(flag)
+		{
+			System.out.println("room : "+ input);
 			String token = input.split(":")[0];
 			String rname = input.split(":")[1];
 			String count = input.split(":")[2];
 			String limit = input.split(":")[3];
-			RoomInfo r = new RoomInfo(rname,count,limit);
-			roomInfoList.add(r);
+				//RoomInfo r = new RoomInfo(rname,count,limit);
+				//roomInfoList.add(r);
 			roomlist.append("[방 이름 : "+ rname +"    현재 인원 :  "+count+"    인원 제한 :  "+limit +"]\n");
 			roomlist.setCaretPosition(roomlist.getDocument().getLength());
-		}
-		else 
-		{
-			
 		}
 	}
 	public void screenOn(boolean flag)

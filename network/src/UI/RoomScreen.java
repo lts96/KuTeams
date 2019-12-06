@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 
 import javax.swing.*;
 
@@ -19,6 +20,7 @@ public class RoomScreen {
 	Sender send;  
 	private boolean act;
 	private boolean shareSwitch;
+	private Robot r;
 	public RoomScreen()
 	{
 		
@@ -28,10 +30,16 @@ public class RoomScreen {
 		this.send = s;
 		this.act = flag;
 		this.shareSwitch = false;
+		try {
+			this.r = new Robot();
+		} catch (AWTException e1) {
+			System.out.println("create robot fail - RoomScreen line 35");
+		}
 		int x = Toolkit.getDefaultToolkit().getScreenSize().width / 2 - width / 2; 
 		int y = Toolkit.getDefaultToolkit().getScreenSize().height / 2 - height / 2;
 		frame = new JFrame();
 		panel = new JPanel();
+		frame.add(panel);
 		frame.setBounds(x, y,width, height);
 		frame.setLayout(null);
 		//frame.getContentPane().setBackground(Color.white);
@@ -50,7 +58,7 @@ public class RoomScreen {
 				if(act)
 				{
 					shareSwitch = true;
-					screenShare();
+					sendScreen();
 				}
 			}
 		});
@@ -64,17 +72,22 @@ public class RoomScreen {
 			}
 		});
 		
-		frame.add(panel);
-		frame.setVisible(true);
+		frame.setVisible(flag);
 		panel.setVisible(true);
 		//cs = new ChatScreen(s);
 	}
-	public void screenShare()
+	public void sendScreen()
 	{
+		BufferedImage image;
 		while(shareSwitch)
 		{
-			
+			image = r.createScreenCapture(new Rectangle(0, 0, width, height));
+			send.sendImage(image);
 		}
+	}
+	public void recvScreen()
+	{
+		
 	}
 	public void screenOn(boolean flag)
 	{

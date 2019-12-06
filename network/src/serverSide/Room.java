@@ -10,9 +10,10 @@ public class Room
 	private String host;
 	private int limit;
 	private List<Client> clientList = new ArrayList<Client>();
-	
+	private int currentClientNum;
 	public Room(int code, String name , String host , int limit)  
 	{
+		this.currentClientNum = 0;    // 고쳐야 될 수도 
 		this.roomCode = code;
 		this.roomName = name; 
 		this.setHost(host);
@@ -96,5 +97,11 @@ public class Room
 	}
 	public void setHost(String host) {
 		this.host = host;
+	}
+	public int getCurrentClientNum() {
+		return currentClientNum;
+	}
+	public void setCurrentClientNum(int currentClientNum) {
+		this.currentClientNum = currentClientNum;
 	}
 }

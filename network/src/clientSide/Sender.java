@@ -4,7 +4,11 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
@@ -16,19 +20,15 @@ public class Sender
 	private ByteBuffer buffer = ByteBuffer.allocate(1024);  // 문자열 전송용 
 	private BufferedOutputStream out;
 	private SocketChannel socketC;
-	private Socket socket;
 	private BufferedImage image;
 	private Robot robot;
-	public Sender(SocketChannel s)
+	private DatagramPacket dp;
+	private DatagramSocket udpSocket;
+	public Sender(SocketChannel s1 , DatagramSocket s2)
 	{
-		this.socketC = s;
-		this.socket = new Socket();
-		try {
-			socket.connect(socketC.getRemoteAddress(), 3000);
-			out = new BufferedOutputStream(socket.getOutputStream());
-		} catch (IOException e1) {
-			System.out.println("screen socket connect fail");
-		}
+		this.socketC = s1;
+		this.setUdpSocket(s2);
+		
 		try {
 			robot = new Robot();
 		} catch (AWTException e) {
@@ -55,15 +55,17 @@ public class Sender
 		}
 		return flag;
 	}
-	public boolean sendScreen(BufferedImage image) 
+	public boolean sendImage(BufferedImage image) 
 	{
 		boolean flag = true;
-		try {
-			ImageIO.write(image , "png", out);
-			out.flush();
-		} catch (IOException e) {
-			System.out.println("image send fail");
-		}
+		
+		
 		return flag;
+	}
+	public DatagramSocket getUdpSocket() {
+		return udpSocket;
+	}
+	public void setUdpSocket(DatagramSocket udpSocket) {
+		this.udpSocket = udpSocket;
 	}
 }

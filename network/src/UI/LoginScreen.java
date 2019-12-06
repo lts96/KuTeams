@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.net.InetAddress;
 
 import javax.swing.*;
 
@@ -84,7 +85,8 @@ public class LoginScreen
 	{
 		String userId = "[lp]:"+id.getText();
 		String userPw = ":"+ new String(pw.getPassword())+":";
-		send.sendString(userId + userPw);
+		String port = Integer.toString(send.getUdpSocket().getLocalPort());
+		send.sendString(userId + userPw + port + ":");
 	}
 	public void recvLogin(String str)
 	{

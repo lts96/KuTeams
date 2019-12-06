@@ -25,10 +25,10 @@ public class ClientMain {
 	private static PrintInfoScreen pis;
 	private static RoomScreen rs;
 	public static int roomCode = -1;
+	private static String ip = "";
 	public static void main(String[] args) throws IOException {
 		InetAddress local = InetAddress.getLocalHost();
-		final String ip = local.getHostAddress();   // 노트북 로컬 ip 
-	
+		ip = local.getHostAddress();   // 노트북 로컬 ip 
 		final int default_port = 8888;
 		// 일단 임의로 로컬 호스트랑 포트 번호 지정 , 나중에는 로컬이 아니라 외부 ip , 그리고 
 		// 포트 번호도 따로 입력 받던가 해야됨.
@@ -40,6 +40,8 @@ public class ClientMain {
 		}
 		SocketAddress sa = new InetSocketAddress(ip, default_port);
 		SocketChannel sc = SocketChannel.open(sa);
+		DatagramSocket udpSocket = new DatagramSocket();
+		System.out.println("Client UDP socket port : "+udpSocket.getLocalPort());
 		if(!sc.isOpen())
 		{
 			System.out.println("client socketChannel open fail!");
@@ -53,11 +55,12 @@ public class ClientMain {
 			sc.register(selector, SelectionKey.OP_CONNECT);
 			//sc.connect(new java.net.InetSocketAddress(ip, default_port));
 			if(!sc.isConnected())
-				System.out.println("서버와 연결 실패!");
+				System.out.println("서버와 채널 연결 실패!");
 			Thread thread = new Thread() {
 				public void run()
 				{
-					Sender send = new Sender(sc);
+					Sender send = new Sender(sc , udpSocket);
+					rs = new RoomScreen(false, send);
 					chat = new ChatScreen(false, send);
 					crs = new CreateRoomScreen(false , send);
 					lobby = new LobbyScreen(false, send , crs);
@@ -109,7 +112,13 @@ public class ClientMain {
 						else if(sub.equals("[[ra")) // 방 참가 요청 결과
 						{
 							if(input.contains("success"))     // 채팅과 화면 전송 시작 
+							{
+								String token = input.split(":")[0];
+								roomCode= Integer.parseInt(input.split(":")[1]);
+								System.out.println("접속한 룸 코드 : "+ roomCode);
 								chat.screenOn(true);
+								rs.screenOn(true);
+							}
 							else
 							{
 								lobby.failRoomAccess(input);
@@ -138,5 +147,9 @@ public class ClientMain {
 			e.printStackTrace();
 			//System.exit(1);
 		}
+	}
+	public String getIp()
+	{
+		return ip;
 	}
 }

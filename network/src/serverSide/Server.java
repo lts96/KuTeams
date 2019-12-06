@@ -26,31 +26,64 @@ public class Server {
 	List<Room> roomList = new ArrayList<>();
 	ServerSocketChannel msc = null;
 	Selector selector = null;
-	ServerSocket serverSocket = null;
+	DatagramSocket udpSocket;
+	InetAddress local;
 	public void start() 
 	{
 		final int default_port = 8888;     // 일단은 임의로 설정     // 기본적인 메세지는 이걸로 받음 , 대신 화면 전송은 다른 프로세스 or 다른 쓰레드 사용 
-		
 		// 클라이언트 더미데이터 
 		Client c1 = new Client("이태선","client","1234");
 		Client c2 = new Client("김철수", "admin", "2323");
-		Client c3 = new Client("존", "john","3333");
+		Client c3 = new Client("존", "3333","3333");
+		//Client c4 = new Client("네모","4444","4444");
+		//Client c5 = new Client("박씨", "5555", "5555");
+		//Client c6 = new Client("최씨", "6666","6666");
+		//Client c7 = new Client("페리","7777","7777");
+		//Client c8 = new Client("조안나", "8888", "8888");
+		//Client c9 = new Client("제이슨", "9999","9999");
+		
 		clientlist.add(c1);
 		clientlist.add(c2);
 		clientlist.add(c3);
+		//clientlist.add(c4);
+		//clientlist.add(c5);
+		//clientlist.add(c6);
+		//clientlist.add(c7);
+		//clientlist.add(c8);
+		//clientlist.add(c9);
 		
+
 		// 룸 더미데이터 
-		Room r1 = new Room(1,"test","김철수" ,3);
+		Room r1 = new Room(1,"test","김철수" ,2);   // -> 버그   3인으로 설정해놨는데 들어감 
 		roomList.add(r1);
 		
 		System.out.println("[main server start!!]");
 		//System.out.println("서버 포트 번호 입력 : ");
 		try
 		{
-			InetAddress local = InetAddress.getLocalHost();
+			local = InetAddress.getLocalHost();
 			System.out.println("main server IP : " + local.getHostAddress());  // 확인용 
 			msc = ServerSocketChannel.open();
 			selector = Selector.open();
+			
+			udpSocket = new DatagramSocket(9999);  //udp는 연결 필요없이 다수의 클라이언트 수용 가능 
+			// 문제는 어떻게 이미지 파일을 주고 받을 것인가 -> 이걸 제대로 출력할 수 있는가 (이건 클라이언트 담당)
+			Thread image = new Thread() {
+				public void run()
+				{
+					while(true)
+					{
+						receiveImage();
+						sendImage();
+						try {
+							this.sleep(2000);
+						} catch (InterruptedException e) {
+							System.out.println("에러 발생   위치 : 서버 line 82");
+						}
+					}
+				}
+			};
+			
 			// msc는 메인 소켓 채널의 약자
 			if(!msc.isOpen())
 			{
@@ -66,6 +99,8 @@ public class Server {
 			msc.bind(new InetSocketAddress(local , default_port));
         	msc.register(selector, SelectionKey.OP_ACCEPT);
         	System.out.println("클라이언트 연결 기다리는중... "); 
+        	
+        	image.start();
         	while(true)
         	{
         		selector.select();
@@ -171,6 +206,7 @@ public class Server {
 				//System.out.println("읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
 				token = input.substring(0, 4);
 				//System.out.println(sub);
+				//buffer.flip();
 				if(token.equals("[lp]"))  // 패킷 검사하기 (로그인인지 아닌지)
 				{
 					checkLogin(input,key);
@@ -217,7 +253,7 @@ public class Server {
 				}
 				else if(token.equals("[ra]")) // 방 참가 요청 코드   room access
 				{
-					int code = enterRoom(input);
+					int code = enterRoom(key,input);
 					if(code > 0)
 						sendMsgToClient("[[ra success]]:"+code +":", key);    // 방 입장 성공
 					else if (code == -1)       //
@@ -235,6 +271,10 @@ public class Server {
 						str += r.getRoomName()+":"+r.getClientList().size()+":"+r.getLimit()+":";
 					}
 					sendMsgToClient(str,key);
+				}
+				else if(token.equals("[ex]"))   // 클라이언트가 채팅방에서 나갈때 
+				{
+					exitRoom(input , key);
 				}
 				buffer.compact();    // 버퍼 오버플로우 조심?
 				buffer.clear();
@@ -363,7 +403,8 @@ public class Server {
 		String token = input.split(":")[0];
 		String id = input.split(":")[1];
 		String pw = input.split(":")[2];
-		System.out.println("로그인 요청 -> 입력받은 ID : "+ id + " 입력받은 PW : "+ pw);	
+		int port = Integer.parseInt(input.split(":")[3]);
+		System.out.println("로그인 요청 -> clientID : "+ id + " client PW : "+ pw+ " client UDP port : "+ port);	
 		
 		// 클라이언트 있는지 찾아보기  있으면 id , pw 비교 
 		for(int i=0;i<clientlist.size();i++)
@@ -379,7 +420,9 @@ public class Server {
 					errorCode = 1;
 					break;
 				}
-				c.setSocketChannel(socketC);     // 클라이언트 address 설정 
+				// 로그인 성공했을때 
+				c.setSocketChannel(socketC);     // 클라이언트 address 설정     
+				c.setUDPport(port);
 				List<byte[]> updateClientData = clientChannel.get(socketC);
 				updateClientData.add(loginAcceptCode.getBytes());
 				key.interestOps(SelectionKey.OP_WRITE);
@@ -403,22 +446,38 @@ public class Server {
 	{
 		
 	}
-	public int enterRoom(String input)
+	public int enterRoom(SelectionKey key, String input)
 	{
+		SocketChannel socketC = (SocketChannel) key.channel();
+		Client sender = null;
+		for(int i=0;i<clientlist.size();i++)   
+		{
+			if(socketC.equals(clientlist.get(i).getSocketChannel()))
+			{
+				sender = clientlist.get(i);
+				break;
+			}
+		}
 		String token = input.split(":")[0];
 		String rname = input.split(":")[1];
 		Room temp;
+		int num;
 		for(int i=0;i<roomList.size();i++)
 		{
 			temp = roomList.get(i);
+			num = temp.getCurrentClientNum();
 			if(temp.getRoomName().equals(rname))
 			{
-				if(temp.getClientList().size()< temp.getLimit())   // 방은 있는데 자리가 없어서 못들어갈때 
+				if(num< temp.getLimit())    // 방에 들어갈 수 있을때 
 				{
 					System.out.println("["+temp.getRoomName()+"]방 입장 요청 -> 승인됨");
+					num++; 
+					temp.setCurrentClientNum(num);
+					if(sender!=null)
+						sender.setRoomCode(temp.getRoomCode());
 					return temp.getRoomCode();
 				}
-				else 
+				else  // 방은 있는데 자리가 없어서 못들어갈때 
 					return -2;
 			}
 		}
@@ -452,5 +511,59 @@ public class Server {
 		}
 		else 
 			return null;
+	}
+	public void exitRoom(String input , SelectionKey key)       
+	{
+		Room temp;
+		String token = input.split(":")[0];
+		String text = input.split(":")[1];
+		int rcode = Integer.parseInt(input.split(":")[2]);
+		//System.out.println("라인 510 : text -> "+text +"," +"rcode -> "+rcode);
+		int num;
+		int targetRoomCode = -2;
+		for(int i=0;i<roomList.size();i++)
+		{
+			temp = roomList.get(i);
+			num = temp.getCurrentClientNum();
+			if(temp.getRoomCode()== rcode)
+			{
+				System.out.println(temp.getRoomName()+" 방에서 client가 나감");   // 방의 현재 인원 수 줄여주기 
+				num--;
+				temp.setCurrentClientNum(num);
+				targetRoomCode = temp.getRoomCode();
+				break;
+			}
+		}
+		if(targetRoomCode >=0)
+		{
+			text = "[cp]:"+text+":"+ Integer.toString(targetRoomCode)+":";
+			try {
+				sendMessage(key, text);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				System.out.println("에러 발생 : 서버 라인 544");
+			}
+		}
+	}
+	public void receiveImage()
+	{
+		
+	}
+	public void sendImage()
+	{
+		DatagramPacket dp;
+		String testMsg = "send testMsg by udp";
+		int port;
+		for(int i=0;i<clientlist.size();i++)
+		{
+			port = clientlist.get(i).getUDPport();
+			dp = new DatagramPacket(testMsg.getBytes(), testMsg.getBytes().length,local,port);
+			try {
+				udpSocket.send(dp);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				System.out.println("send by udp fail! -> server.java line 488");
+			}
+		}
 	}
 }

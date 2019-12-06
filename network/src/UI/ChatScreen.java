@@ -32,8 +32,12 @@ public class ChatScreen
 		frame.add(panel);
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				
-				System.exit(0);
+				// 채팅방 나갔다는 메세지 출력 
+				String userChat = "[ex]:님이 채팅을 종료했습니다."+":"+ClientMain.roomCode+":";
+				send.sendString(userChat);
+				ClientMain.roomCode = -1;
+				screenOn(false);
+				//System.exit(0);
 			}
 		});
 		panel.setLayout(null);
@@ -100,7 +104,7 @@ public class ChatScreen
 			String tok = s.split(":")[0];
 			String chatText = s.split(":")[1];
 			String name = s.split(":")[2];
-			chatlog.append("["+name+" 님의 메세지]:"+chatText+"\n");
+			chatlog.append("["+name+"]:"+chatText+"\n");
 		}
 		chatlog.setCaretPosition(chatlog.getDocument().getLength());
 	}
@@ -110,6 +114,9 @@ public class ChatScreen
 		this.frame.setVisible(flag);
 		chatlog.setText("");
 		chat.setText("");
+		String userChat = "[ch]:님이 채팅을 시작했습니다."+":"+ClientMain.roomCode+":";
+		if(flag)
+			send.sendString(userChat);
 	}
 	public boolean isAct()
 	{

@@ -54,7 +54,7 @@ public class Server {
 		
 
 		// 룸 더미데이터 
-		Room r1 = new Room(1,"test","김철수" ,2);   // -> 버그   3인으로 설정해놨는데 들어감 
+		Room r1 = new Room(1,"test","김철수" ,9);   // -> 버그   3인으로 설정해놨는데 들어감 
 		roomList.add(r1);
 		
 		System.out.println("[main server start!!]");

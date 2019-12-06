@@ -7,6 +7,8 @@ import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 
 import javax.swing.*;
+
+import clientSide.ClientMain;
 import clientSide.Sender;
 public class LobbyScreen 
 {
@@ -81,7 +83,10 @@ public class LobbyScreen
 		
 		b2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				enterRoom();
+				if(ClientMain.roomCode > 0)
+					JOptionPane.showMessageDialog(null, "[room access fail]\n you already access");
+				else 
+					enterRoom();
 			}
 		});
 		

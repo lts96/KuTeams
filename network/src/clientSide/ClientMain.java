@@ -47,12 +47,13 @@ public class ClientMain {
 			System.out.println("client socketChannel open fail!");
 			return;
 		}
-		try {
-			sc.configureBlocking(false);
+		try {                                             // 블로킹으로 구현 -> 논블록 잘못 만들어서 큰일날뻔 -> 계속 무한루프 돌았음 
+			sc.configureBlocking(true);
 			sc.setOption(StandardSocketOptions.SO_RCVBUF, 128*1024);
 			sc.setOption(StandardSocketOptions.SO_SNDBUF, 128*1024);
-			sc.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
-			sc.register(selector, SelectionKey.OP_CONNECT);
+			//sc.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+			//sc.register(selector, SelectionKey.OP_CONNECT);
+			
 			//sc.connect(new java.net.InetSocketAddress(ip, default_port));
 			if(!sc.isConnected())
 				System.out.println("서버와 채널 연결 실패!");
@@ -70,14 +71,13 @@ public class ClientMain {
 			};
 			thread.start();
 			// receive 하는 부분 
-			SocketChannel socketC = sc;
 			while(true)
 			{
 				String input,sub;
 				String parse;
 				int readNum = -1;
 				try {
-					readNum = socketC.read(buffer);
+					readNum = sc.read(buffer);
 					if(readNum == -1)
 					{
 						return;
@@ -117,7 +117,7 @@ public class ClientMain {
 								roomCode= Integer.parseInt(input.split(":")[1]);
 								System.out.println("접속한 룸 코드 : "+ roomCode);
 								chat.screenOn(true);
-								rs.screenOn(true);
+								rs.screenOn(false);
 							}
 							else
 							{
@@ -126,7 +126,7 @@ public class ClientMain {
 						}
 						else if(sub.equals("[cp]"))
 						{
-							System.out.println("읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
+							System.out.println("읽은 값 : "+ input + " by "+ sc.getRemoteAddress());
 							if(chat.isAct())
 							{
 								chat.recvChat(input);
@@ -143,7 +143,8 @@ public class ClientMain {
 				}
 			}
 			
-		} catch (IOException e) {
+		} 
+		catch (IOException e) {
 			e.printStackTrace();
 			//System.exit(1);
 		}

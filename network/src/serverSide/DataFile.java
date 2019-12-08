@@ -8,11 +8,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-public class File
+public class DataFile
 {
 	private OutputStream output;
 	private Path path;
-	public File(String path) throws FileNotFoundException
+	public DataFile(String path) throws FileNotFoundException
 	{
 		output = new FileOutputStream(path);
 		this.path = Paths.get(path);

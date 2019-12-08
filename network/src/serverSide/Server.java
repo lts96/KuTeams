@@ -1,4 +1,5 @@
 package serverSide;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -16,11 +17,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
 
+import javax.imageio.ImageIO;
+
 import UI.LoginScreen;
 
 public class Server {
 	private static int roomCount = 1;
-	private ByteBuffer buffer = ByteBuffer.allocate(1024);
+	private ByteBuffer buffer = ByteBuffer.allocate(100000);
+	private ByteBuffer imageBuffer = ByteBuffer.allocate(100000); 
 	Map<SocketChannel, List<byte[]>> clientChannel = new HashMap<>();   // 채널마다 byte 배열 저장 필요 -> 메세지 뭐 왔나 저장용
 	List<Client> clientlist = new ArrayList<>();
 	List<Room> roomList = new ArrayList<>();
@@ -51,7 +55,6 @@ public class Server {
 		//clientlist.add(c7);
 		//clientlist.add(c8);
 		//clientlist.add(c9);
-		
 
 		// 룸 더미데이터 
 		Room r1 = new Room(1,"test","김철수" ,9);   // -> 버그   3인으로 설정해놨는데 들어감 
@@ -66,23 +69,10 @@ public class Server {
 			msc = ServerSocketChannel.open();
 			selector = Selector.open();
 			
+			System.out.println("초기 buffer limit : "+ imageBuffer.limit()+"/" +imageBuffer.position());
+			
 			udpSocket = new DatagramSocket(9999);  //udp는 연결 필요없이 다수의 클라이언트 수용 가능 
 			// 문제는 어떻게 이미지 파일을 주고 받을 것인가 -> 이걸 제대로 출력할 수 있는가 (이건 클라이언트 담당)
-			Thread image = new Thread() {
-				public void run()
-				{
-					while(true)
-					{
-						receiveImage();
-						sendImage();
-						try {
-							this.sleep(2000);
-						} catch (InterruptedException e) {
-							System.out.println("에러 발생   위치 : 서버 line 82");
-						}
-					}
-				}
-			};
 			
 			// msc는 메인 소켓 채널의 약자
 			if(!msc.isOpen())
@@ -93,14 +83,15 @@ public class Server {
 			
 			msc.configureBlocking(false);
 			// 옵션값
-			msc.setOption(StandardSocketOptions.SO_RCVBUF, 256*1024);
+			msc.setOption(StandardSocketOptions.SO_RCVBUF, 128*1024*1024);    // 대용량을 위해 늘림 
 			msc.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 			
 			msc.bind(new InetSocketAddress(local , default_port));
         	msc.register(selector, SelectionKey.OP_ACCEPT);
         	System.out.println("클라이언트 연결 기다리는중... "); 
         	
-        	image.start();
+        	
+      
         	while(true)
         	{
         		selector.select();
@@ -195,17 +186,15 @@ public class Server {
 			{
 				//System.out.println("read close");
 				this.clientChannel.remove(socketC);
-				
 				socketC.close();
 				key.cancel();
 				return;
 			}
-			else 
+			else if(readNum > 0 && readNum < 1024)
 			{
 				input = new String(buffer.array(),"UTF-8");
-				//System.out.println("읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
+				System.out.println("읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
 				token = input.substring(0, 4);
-				//System.out.println(sub);
 				//buffer.flip();
 				if(token.equals("[lp]"))  // 패킷 검사하기 (로그인인지 아닌지)
 				{
@@ -276,7 +265,29 @@ public class Server {
 				{
 					exitRoom(input , key);
 				}
-				buffer.compact();    // 버퍼 오버플로우 조심?
+				else if(token.equals("[im]"))
+				{
+					int rcode = Integer.parseInt(input.split(":")[1]);
+					
+				}
+				buffer.compact();    // 이건 불안정한 방법 -> 버퍼가 읽은 값이 512를 넘어가면 제대로 초기화가 안됨 
+				buffer.clear();
+			}
+			else if(readNum >= 1024) // 만약 읽을 데이터가 1024 이상일 경우    -> 일단은 성공 
+			{
+				//readNum = socketC.read(buffer);
+				System.out.println("after imageBuffer : " + buffer.array().toString());
+				System.out.println("readNum : "+ readNum);
+				imageBuffer.flip();
+				byte [] imageInByte = buffer.array();
+				System.out.println("limit : "+imageBuffer.limit() + " position : "+imageBuffer.position());
+				
+				BufferedImage imag = ImageIO.read(new ByteArrayInputStream(imageInByte));
+		        ImageIO.write(imag, "png", new File("C:\\Users\\s_dlxotjs\\Desktop\\네트워크 프로그래밍", "img-server.png"));
+				imageBuffer.flip();
+				imageBuffer.clear();
+				//System.out.println("limit : "+imageBuffer.limit());
+				buffer.compact();
 				buffer.clear();
 			}
 		}
@@ -545,7 +556,7 @@ public class Server {
 			}
 		}
 	}
-	public void receiveImage()
+	public void receiveImage(String input)
 	{
 		
 	}

@@ -13,6 +13,7 @@ import java.util.Set;
 import UI.LoginScreen;
 import UI.PrintInfoScreen;
 import UI.RoomScreen;
+import UI.Camera;
 import UI.ChatScreen;
 import UI.CreateRoomScreen;
 import UI.LobbyScreen;
@@ -23,6 +24,7 @@ public class ClientMain {
 	private static LobbyScreen lobby;
 	private static CreateRoomScreen crs;
 	private static PrintInfoScreen pis;
+	private static Camera cam;
 	private static RoomScreen rs;
 	public static int roomCode = -1;
 	private static String ip = "";
@@ -30,7 +32,7 @@ public class ClientMain {
 		InetAddress local = InetAddress.getLocalHost();
 		ip = local.getHostAddress();   // 노트북 로컬 ip 
 		final int default_port = 8888;
-		// 일단 임의로 로컬 호스트랑 포트 번호 지정 , 나중에는 로컬이 아니라 외부 ip , 그리고 
+		// 일단 임의로 로컬 호스트랑 포트 번호 지정 , 나중에는 로컬이 아니라 외부 ip 
 		// 포트 번호도 따로 입력 받던가 해야됨.
 		Selector selector = Selector.open();
 		if(!selector.isOpen())
@@ -49,8 +51,8 @@ public class ClientMain {
 		}
 		try {                                             // 블로킹으로 구현 -> 논블록 잘못 만들어서 큰일날뻔 -> 계속 무한루프 돌았음 
 			sc.configureBlocking(true);
-			sc.setOption(StandardSocketOptions.SO_RCVBUF, 128*1024);
-			sc.setOption(StandardSocketOptions.SO_SNDBUF, 128*1024);
+			sc.setOption(StandardSocketOptions.SO_RCVBUF, 64*1024*1024);
+			sc.setOption(StandardSocketOptions.SO_SNDBUF, 64*1024*1024);
 			//sc.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
 			//sc.register(selector, SelectionKey.OP_CONNECT);
 			
@@ -61,6 +63,7 @@ public class ClientMain {
 				public void run()
 				{
 					Sender send = new Sender(sc , udpSocket);
+					cam = new Camera(send);
 					rs = new RoomScreen(false, send);
 					chat = new ChatScreen(false, send);
 					crs = new CreateRoomScreen(false , send);
@@ -82,7 +85,7 @@ public class ClientMain {
 					{
 						return;
 					}
-					else
+					else if(readNum > 0)   // && readNum <=1024
 					{
 						input = new String(buffer.array(),"UTF-8");
 						//System.out.println("길이 : "+input.length()+" 읽은 값 : "+ input);
@@ -118,6 +121,8 @@ public class ClientMain {
 								System.out.println("접속한 룸 코드 : "+ roomCode);
 								chat.screenOn(true);
 								rs.screenOn(false);
+								cam.screenOn(true);
+								cam.camera_work();
 							}
 							else
 							{

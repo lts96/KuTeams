@@ -5,6 +5,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 
 import javax.swing.*;
 
@@ -58,7 +59,12 @@ public class RoomScreen {
 				if(act)
 				{
 					shareSwitch = true;
-					sendScreen();
+					try {
+						sendScreen();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				}
 			}
 		});
@@ -76,13 +82,14 @@ public class RoomScreen {
 		panel.setVisible(true);
 		//cs = new ChatScreen(s);
 	}
-	public void sendScreen()
+	public void sendScreen() throws IOException
 	{
+		int roomCode = ClientMain.roomCode;
 		BufferedImage image;
 		while(shareSwitch)
 		{
 			image = r.createScreenCapture(new Rectangle(0, 0, width, height));
-			send.sendImage(image);
+			send.sendImage(image , roomCode);
 		}
 	}
 	public void recvScreen()

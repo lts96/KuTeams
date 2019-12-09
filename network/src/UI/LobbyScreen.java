@@ -35,8 +35,7 @@ public class LobbyScreen
 		//frame.setLayout(new FlowLayout());
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				// 현재  연결 하나 끊으면 서버가 닫혀버리는 버그 있음? 
-				System.exit(0);
+				ClientMain.closeConnection();
 			}
 		});
 		panel = new JPanel();
@@ -163,5 +162,9 @@ public class LobbyScreen
 	{
 		this.frame.setVisible(flag);
 		this.panel.setVisible(flag);
+	}
+	public void setTitle()
+	{
+		frame.setTitle(ClientMain.clientName+"의 메인화면");
 	}
 }

@@ -8,6 +8,7 @@ import java.net.InetAddress;
 
 import javax.swing.*;
 
+import clientSide.ClientMain;
 import clientSide.Sender;
 public class LoginScreen
 {
@@ -33,7 +34,7 @@ public class LoginScreen
 		frame.add(panel);
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				System.exit(0);
+				ClientMain.closeConnection();
 			}
 		});
 		panel.setLayout(null);
@@ -87,18 +88,23 @@ public class LoginScreen
 		String userPw = ":"+ new String(pw.getPassword())+":";
 		send.sendString(userId + userPw );
 	}
-	public void recvLogin(String str)
+	public boolean recvLogin(String str)
 	{
 		if(str.contains("[[login success]]")){
+			String token = str.split(":")[0];
+			String name = str.split(":")[1];
+			ClientMain.clientName = name;
 			JOptionPane.showMessageDialog(null, "login success!");
 			flag = true;
 			frame.dispose();
 			screen.screenOn(true);
+			return true;
 		}
 		else    
 		{
 			String sub = str.split(":")[0];
 			JOptionPane.showMessageDialog(null, sub);
+			return false;
 		}
 	}
 	public void screenOn(boolean flag)

@@ -32,7 +32,11 @@ public class ClientMain {
 	private static Camera cam;
 	private static Monitor monitor;
 	public static int roomCode = -1;
+	public static String clientName = "";
 	private static String ip = "";
+	private static SocketChannel sc = null;
+	private static boolean run = true;
+	private static Thread thread;
 	public static void main(String[] args) throws IOException {
 		InetAddress local = InetAddress.getLocalHost();
 		ip = local.getHostAddress();   // 노트북 로컬 ip 
@@ -46,7 +50,7 @@ public class ClientMain {
 			return;
 		}
 		SocketAddress sa = new InetSocketAddress(ip, default_port);
-		SocketChannel sc = SocketChannel.open(sa);
+		sc = SocketChannel.open(sa);
 		//DatagramSocket udpSocket = new DatagramSocket();
 		//System.out.println("Client UDP socket port : "+udpSocket.getLocalPort());
 		if(!sc.isOpen())
@@ -64,10 +68,11 @@ public class ClientMain {
 			//sc.connect(new java.net.InetSocketAddress(ip, default_port));
 			if(!sc.isConnected())
 				System.out.println("서버와 채널 연결 실패!");
-			Thread thread = new Thread() {
+			thread = new Thread() {
 				public void run()
 				{
 					Sender send = new Sender(sc);
+					//Sender imageSender = new Sender(sc);
 					cam = new Camera(send);
 					monitor = new Monitor(false);
 					chat = new ChatScreen(false, send , cam , monitor);
@@ -75,11 +80,10 @@ public class ClientMain {
 					lobby = new LobbyScreen(false, send , crs);
 					login = new LoginScreen(true , send , lobby);
 				}
-
 			};
 			thread.start();
 			// receive 하는 부분 
-			while(true)
+			while(run)
 			{
 				String input,sub;
 				String parse;
@@ -90,16 +94,21 @@ public class ClientMain {
 					{
 						return;
 					}
-					else if(readNum > 0 && readNum < 1024)   // && readNum <=1024
+					else if(readNum > 0 && readNum < 1024)   // 명령어 or 채팅 메세지만 따로 체크용 
 					{
 						input = new String(buffer.array(),"UTF-8");
 						//System.out.println("길이 : "+input.length()+" 읽은 값 : "+ input);
-						//System.out.println("길이 : "+sub.length()+"sub : "+ sub);
 						sub = input.substring(0, 4);
 						if(sub.equals("[[lo"))  // 패킷 검사하기 (로그인인지 아닌지)
 						{
-							sub = input.substring(0,17);
-							login.recvLogin(input);
+							//sub = input.substring(0,17);
+							if(login.recvLogin(input));
+							{
+								lobby.setTitle();
+								monitor.setTitle();
+								cam.setTitle();
+								chat.setTitle();
+							}
 						}
 						else if(sub.equals("[[si"))   // 회원가입 검사 
 						{
@@ -109,7 +118,7 @@ public class ClientMain {
 						{
 							crs.recvMsg(input);
 						}
-						else if(sub.equals("[ri]"))
+						else if(sub.equals("[ri]"))   
 						{
 							lobby.addScreenInfo(input, true);
 						}
@@ -134,13 +143,17 @@ public class ClientMain {
 								lobby.failRoomAccess(input);
 							}
 						}
-						else if(sub.equals("[cp]"))
+						else if(sub.equals("[cp]"))     // 채팅 메세지 받았을때
 						{
-							System.out.println("읽은 값 : "+ input + " by "+ sc.getRemoteAddress());
+							//System.out.println("읽은 값 : "+ input + " by "+ sc.getRemoteAddress());
 							if(chat.isAct())
 							{
 								chat.recvChat(input);
 							}
+						}
+						else if(sub.equals("[cl]"))    // 클라이언트 리스트 받았을때
+						{
+							chat.printClientList(input);
 						}
 						buffer.compact();    // 버퍼 초기화 해야됨  이 방법 말고 
 						buffer.clear();
@@ -181,8 +194,26 @@ public class ClientMain {
 	{
 		return ip;
 	}
-	public void readImage()
+	public static void closeConnection()
 	{
-		
+		if(sc.isOpen())
+		{
+			Sender s= new Sender(sc);
+			s.sendString("[cc]:Client close connection:");
+			try {
+				if(thread.isAlive())
+					thread.stop();
+				sc.shutdownInput();
+				sc.shutdownOutput();
+				sc.finishConnect();
+				sc.close();
+				run = false;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		System.out.println("클라이언트를 정상적으로 종료합니다.");
+		System.exit(0);
 	}
 }

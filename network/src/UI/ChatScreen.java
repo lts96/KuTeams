@@ -19,8 +19,8 @@ public class ChatScreen
 	private JButton submit , cameraOn , cameraOff , monitorOn , monitorOff;
 	private JPanel panel;
 	private JLabel teacher, client;
-	private JTextArea chatlog;
-	private JScrollPane scroll;
+	private JTextArea chatlog , clientList;
+	private JScrollPane scroll , scroll2;
 	private Camera cam;
 	private Monitor monitor;
 	Sender send;
@@ -75,6 +75,7 @@ public class ChatScreen
 			public void actionPerformed(ActionEvent e) {
 				if(act)
 				{
+					send.sendString("[ch]:"+"님이 방송을 시작했습니다!"+":"+ClientMain.roomCode+":");
 					cam.screenOn(true);
 					cam.run();
 				}
@@ -87,7 +88,10 @@ public class ChatScreen
 		cameraOff.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if(act)
-				cam.screenOn(false);
+				{
+					send.sendString("[ch]:"+"님이 방송을 종료했습니다."+":"+ClientMain.roomCode+":");
+					cam.screenOn(false);
+				}
 			}
 		});
 		
@@ -99,7 +103,8 @@ public class ChatScreen
 				if(act)
 				{
 					monitor.screenOn(true);
-					monitor.printScreen();
+					if(monitor.isAct())
+						monitor.printScreen();
 				}
 			}
 		});
@@ -123,15 +128,25 @@ public class ChatScreen
 		scroll.setBounds(30, 30,340, 350);
 		scroll.getViewport().setBackground(Color.white);
 		panel.add(scroll);
+		
+		clientList = new JTextArea();
+		clientList.setBounds(450, 30, 710, 300);
+		panel.add(clientList);
+		
+		scroll2 = new JScrollPane(clientList);
+		scroll2.setBounds(30, 30,340, 350);
+		scroll2.getViewport().setBackground(Color.white);
+		panel.add(scroll2);
+		
 		frame.setVisible(flag);
 		panel.setVisible(true);
 	}
-	public void recvChat(String input) 
+	public void recvChat(String input)   // 채팅 메세지 받기만 하는 역할 
 	{
 		if(input.length() > 0)
 			addChat(input, false);
 	}
-	public void sendChat()
+	public void sendChat()    // 채팅 메세지 보내는 기능 
 	{
 		String str = chat.getText();
 		String userChat = "[ch]:"+chat.getText()+":"+ClientMain.roomCode+":";
@@ -139,7 +154,7 @@ public class ChatScreen
 		chat.setText("");
 		addChat(str , true);
 	}
-	public void sendWhisper()   // 형식    [cw]:이름:내용:roomCode 
+	public void sendWhisper()   // 형식    [cw]:이름:내용:roomCode     귓속말 기능 , 아직 미완성 
 	{
 		String str = chat.getText();
 		String userChat = "[cw]:"+chat.getText()+":"+ClientMain.roomCode+":";
@@ -147,7 +162,7 @@ public class ChatScreen
 		chat.setText("");
 		addChat(str , true);
 	}
-	public void addChat(String s , boolean flag)
+	public void addChat(String s , boolean flag)    // 채팅 내용 화면에 출력하는 함수 
 	{
 		if(flag)
 			chatlog.append("[보낸 메세지]: "+s+"\n");
@@ -160,7 +175,17 @@ public class ChatScreen
 		}
 		chatlog.setCaretPosition(chatlog.getDocument().getLength());
 	}
-	public void screenOn(boolean flag)
+	public void printClientList(String list)                  // 현재 해당 방에 접속중인 client 출력 
+	{
+		String token = list.split(":")[0];
+		int num = Integer.parseInt(list.split(":")[1]);
+		for(int i=2 ;i< num+2;i++)
+		{
+			String name = list.split(":")[i];
+			clientList.append("[이름 : "+ name+"]" +"\n");
+		}
+	}
+	public void screenOn(boolean flag)     // 화면 껐다키는 기능 (버튼 등 다른 기능 비활성화 포함 )
 	{
 		this.act = flag;
 		this.frame.setVisible(flag);
@@ -170,8 +195,12 @@ public class ChatScreen
 		if(flag)
 			send.sendString(userChat);
 	}
-	public boolean isAct()
+	public boolean isAct()     // 지금 켜진 상태인지 체크용
 	{
 		return this.act;
+	}
+	public void setTitle()     // 프레임 제목 갱신용
+	{
+		frame.setTitle(ClientMain.clientName+"의 채팅화면");
 	}
 }

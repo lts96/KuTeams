@@ -27,7 +27,7 @@ public class Monitor {
 		int x = Toolkit.getDefaultToolkit().getScreenSize().width / 2 - w / 2;
 		int y = Toolkit.getDefaultToolkit().getScreenSize().height / 2 - h / 2;
 		this.act = flag;
-		frame = new JFrame();
+		frame = new JFrame("모니터");
 		frame.setBounds(x, y,w, h);
 		frame.setLayout(null);
 		frame.addWindowListener(new WindowAdapter() {
@@ -64,5 +64,9 @@ public class Monitor {
 	public boolean isAct()
 	{
 		return this.act;
+	}
+	public void setTitle()
+	{
+		frame.setTitle(ClientMain.clientName+"의 모니터");
 	}
 }

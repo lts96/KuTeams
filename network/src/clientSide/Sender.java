@@ -38,11 +38,12 @@ public class Sender
 	}
 	public boolean sendString(String str)  
 	{
+		int strlen = str.length();
 		boolean flag = true;
 		try {
-			buffer.clear();
+			buffer.clear();   // 이미지 보내고 난 다음 버퍼값이 제대로 안비워진다.       뭔가 문제가 있는듯   
 			buffer = ByteBuffer.wrap(str.getBytes("UTF-8"));
-			System.out.println("[client send]-> " +new String(buffer.array()));
+			//System.out.println("[client send]-> " +new String(buffer.array()));
 			try {
 				socketC.write(buffer);
 			} catch (IOException e) {

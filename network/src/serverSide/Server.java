@@ -190,7 +190,10 @@ public class Server {
 			}
 			else if(readNum > 0 && readNum < 1024)
 			{
-				input = new String(buffer.array(),"UTF-8");
+				buffer.flip();
+				byte [] messageByte= new byte[readNum];
+				buffer.get(messageByte,buffer.position(), buffer.limit());
+				input = new String(messageByte,"UTF-8");
 				System.out.println("읽은 값 : "+ input + " by "+ socketC.getRemoteAddress());
 				token = input.substring(0, 4);
 				//buffer.flip();
@@ -263,9 +266,13 @@ public class Server {
 				{
 					exitRoom(input , key);
 				}
-				else if(token.equals("[im]"))
+				else if(token.equals("[im]"))   
 				{
 					int rcode = Integer.parseInt(input.split(":")[1]);	
+				}
+				else if(token.equals("[cc]"))   // 클라이언트 연결이 끊어졌을때 -> 로그아웃    라인 597
+				{
+					logOut(findSender(key));
 				}
 				buffer.compact();    // 이건 불안정한 방법 -> 버퍼가 읽은 값이 512를 넘어가면 제대로 초기화가 안됨 
 				buffer.clear();
@@ -450,9 +457,10 @@ public class Server {
 					break;
 				}
 				// 로그인 성공했을때 
+				loginAcceptCode += ":"+c.getName() + ":";
 				c.setSocketChannel(socketC);     // 클라이언트 address 설정     
 				List<byte[]> updateClientData = clientChannel.get(socketC);
-				updateClientData.add(loginAcceptCode.getBytes());
+				updateClientData.add(loginAcceptCode.getBytes("UTF-8"));
 				key.interestOps(SelectionKey.OP_WRITE);
 				flag = true;
 				break;
@@ -586,5 +594,13 @@ public class Server {
 			}
 		}
 		return sender;
+	}
+	public void logOut(Client client)
+	{
+		if(client != null)
+		{
+			System.out.println("Client "+client.getName()+"님이 로그아웃 했습니다.");
+			client.setOnline(false);
+		}
 	}
 }

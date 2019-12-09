@@ -85,8 +85,7 @@ public class LoginScreen
 	{
 		String userId = "[lp]:"+id.getText();
 		String userPw = ":"+ new String(pw.getPassword())+":";
-		String port = Integer.toString(send.getUdpSocket().getLocalPort());
-		send.sendString(userId + userPw + port + ":");
+		send.sendString(userId + userPw );
 	}
 	public void recvLogin(String str)
 	{

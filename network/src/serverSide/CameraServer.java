@@ -9,7 +9,7 @@ import javax.swing.*;
 
 public class CameraServer 
 {
-	final int w = 1280, h = 720;
+	final int w = 720, h = 480;
 	final int x = Toolkit.getDefaultToolkit().getScreenSize().width / 2 - w / 2, y = Toolkit.getDefaultToolkit().getScreenSize().height / 2 - h / 2;
 	JFrame frame;
 	public CameraServer() 

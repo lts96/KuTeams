@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.nio.channels.SocketChannel;
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 
 import clientSide.ClientMain;
 import clientSide.Sender;
@@ -27,63 +28,38 @@ public class Camera
 	public Camera(Sender s)
 	{
 		frame = new JFrame("카메라"); //창 생성
-		frame.setBounds(0, 0, 720, 480);//창 위치,크기 조절
+		frame.setBounds(300, 300,720,1);//창 위치,크기 조절
 		frame.setLayout(null);
-		
-		/*
-		text = new JTextField(); //텍스트공간 생성
-		text.setVisible(true); //보이
-		text.setBounds(25, 15, 100, 50);
-		
-		button = new JButton("시작");
-		button.setVisible(true);
-		button.setBounds(125, 15, 50, 50);
-		button.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				client_work();
-			}
-
-		});
-		//frame.add(panel);
-		frame.add(text);
-		frame.add(button);
-		*/
 		this.send = s;
 		frame.setVisible(false);
-		//camera_work();
 	}
-	public void camera_work()
+	public void run()
 	{
-		Socket socket = null;
-		System.out.println("클라이언트 준비완료");
-		try 
-		{
-			//socket = new Socket("127.0.0.1", 12345);
-			System.out.println("접속완료 - 클라이언트 ");
-			BufferedImage image;
-			Robot r = new Robot(); 
-			//BufferedOutputStream bout = new BufferedOutputStream(socket.getOutputStream());
-			//frame.setUndecorated(true);
-			//frame.setBackground(new Color(0,0,0,122));
-			frame.setBounds(0, 0, 350, 1);
-			//while(flag) 
-			//{
-				int frameX = frame.getX();
-				int frameY = frame.getY();
-				image = r.createScreenCapture(new Rectangle(frameX,frameY,720,480));
-				send.sendImage(image, ClientMain.roomCode);
-					//스크린샷을 찍어서 image에 저장해
-				//ImageIO.write(image, "bmp", bout);//그 이미지를 png파일로 소켓 아웃풋스트림으로 쏴줌
-				//bout.flush();   //버퍼에 쓰인 이미지를 서버로 보냄
-			//}
-		} 
-		catch (Exception e) 
-		{
-			e.printStackTrace();
-			System.out.println("접속실패 - 클라이언트");
-		}
-		
+		Thread t1 = new Thread() {
+			public void run()
+			{
+				try 
+				{
+					BufferedImage image;
+					Robot r = new Robot(); 
+					while(flag) 
+					{
+						int frameX = frame.getX();
+						int frameY = frame.getY();
+						image = r.createScreenCapture(new Rectangle(frameX,frameY,720,480));
+						send.sendImage(image, ClientMain.roomCode);
+						//ImageIO.write(image, "bmp", bout);//그 이미지를 png파일로 소켓 아웃풋스트림으로 쏴줌
+						//bout.flush();   //버퍼에 쓰인 이미지를 서버로 보냄
+					}
+				} 
+				catch (Exception e) 
+				{
+					e.printStackTrace();
+					System.out.println("camera error");
+				}
+			}
+		};
+		t1.start();
 	}
 	public void screenOn(boolean act)
 	{

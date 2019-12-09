@@ -39,7 +39,7 @@ public class Server {
 		Client c1 = new Client("이태선","client","1234");
 		Client c2 = new Client("김철수", "admin", "2323");
 		Client c3 = new Client("존", "3333","3333");
-		//Client c4 = new Client("네모","4444","4444");
+		Client c4 = new Client("네모","4444","4444");
 		//Client c5 = new Client("박씨", "5555", "5555");
 		//Client c6 = new Client("최씨", "6666","6666");
 		//Client c7 = new Client("페리","7777","7777");
@@ -49,7 +49,7 @@ public class Server {
 		clientlist.add(c1);
 		clientlist.add(c2);
 		clientlist.add(c3);
-		//clientlist.add(c4);
+		clientlist.add(c4);
 		//clientlist.add(c5);
 		//clientlist.add(c6);
 		//clientlist.add(c7);
@@ -68,10 +68,7 @@ public class Server {
 			System.out.println("main server IP : " + local.getHostAddress());  // 확인용 
 			msc = ServerSocketChannel.open();
 			selector = Selector.open();
-			
-			System.out.println("초기 buffer limit : "+ imageBuffer.limit()+"/" +imageBuffer.position());
-			
-			udpSocket = new DatagramSocket(9999);  //udp는 연결 필요없이 다수의 클라이언트 수용 가능 
+			//udpSocket = new DatagramSocket(9999);  //udp는 연결 필요없이 다수의 클라이언트 수용 가능 
 			// 문제는 어떻게 이미지 파일을 주고 받을 것인가 -> 이걸 제대로 출력할 수 있는가 (이건 클라이언트 담당)
 			
 			// msc는 메인 소켓 채널의 약자
@@ -124,7 +121,8 @@ public class Server {
 		}
 		catch (IOException e) 
 		{
-			System.out.println("server.java 100 line catch");
+			System.out.println("server.java 124 line catch");
+			System.out.println(e);
 			if(msc.isOpen())
 			{
 				try {
@@ -267,33 +265,53 @@ public class Server {
 				}
 				else if(token.equals("[im]"))
 				{
-					int rcode = Integer.parseInt(input.split(":")[1]);
-					
+					int rcode = Integer.parseInt(input.split(":")[1]);	
 				}
 				buffer.compact();    // 이건 불안정한 방법 -> 버퍼가 읽은 값이 512를 넘어가면 제대로 초기화가 안됨 
 				buffer.clear();
 			}
-			else if(readNum >= 1024) // 만약 읽을 데이터가 1024 이상일 경우    -> 일단은 성공 
+			else if(readNum >= 1024) // 만약 읽을 데이터가 1024 이상일 경우    -> 일단은 성공       
 			{
 				//readNum = socketC.read(buffer);
-				System.out.println("after imageBuffer : " + buffer.array().toString());
+				//한번에 read 할수 있는 바이트 수 -> 131711 ?  이 이상을 읽지를 못함 
+				buffer.flip();
 				System.out.println("readNum : "+ readNum);
-				imageBuffer.flip();
-				byte [] imageInByte = buffer.array();
-				System.out.println("limit : "+imageBuffer.limit() + " position : "+imageBuffer.position());
+				byte [] imageInByte= new byte[readNum];
+				buffer.get(imageInByte,buffer.position(), buffer.limit());
+				System.out.println("buffer position : "+ buffer.position() +" buffer limit :" + buffer.limit());
+				System.out.println("image byte size : "+ imageInByte.length);
 				
-				BufferedImage imag = ImageIO.read(new ByteArrayInputStream(imageInByte));
-		        ImageIO.write(imag, "png", new File("C:\\Users\\s_dlxotjs\\Desktop\\네트워크 프로그래밍", "img-server.png"));
-				imageBuffer.flip();
-				imageBuffer.clear();
-				//System.out.println("limit : "+imageBuffer.limit());
+				Client sender = findSender(key);
+				if(sender!=null)
+				{
+					for(int i=0;i<clientlist.size();i++)
+					{
+						if(!clientlist.get(i).getId().equals(sender.getId())&& clientlist.get(i).getRoomCode() == sender.getRoomCode())
+						{
+							SocketChannel target = clientlist.get(i).getSocketChannel();
+							if(target!=null)
+							{
+								System.out.println(sender.getName()+"님이 "+clientlist.get(i).getName() +"에게");
+								SelectionKey targetKey = target.keyFor(selector);
+								SocketChannel targetChannel = (SocketChannel)targetKey.channel();
+								List<byte[]> updateClientData = clientChannel.get(targetChannel);
+								updateClientData.add(imageInByte);
+								targetKey.interestOps(SelectionKey.OP_WRITE);
+							}
+						}
+					}
+				}
+				//바이트 -> 이미지 파일 복원 -> 성공함 
+				//BufferedImage imag = ImageIO.read(new ByteArrayInputStream(imageInByte));
+		        //ImageIO.write(imag, "png", new File("C:\\Users\\s_dlxotjs\\Desktop\\네트워크 프로그래밍", "img-server2.png"));
+			
 				buffer.compact();
 				buffer.clear();
 			}
 		}
 		catch (Exception e) {
 			// TODO: handle exception
-			System.err.println(e);
+			e.printStackTrace();
 			System.exit(1);    // -> 이거 지우면  클라이언트에서 창 닫을때 계속 에러메세지 출력됨 
 		}
 	}
@@ -305,7 +323,8 @@ public class Server {
 		while(it.hasNext()==true)
 		{
 			byte[] temp = it.next();
-			System.out.println("send to "+ socketC.getRemoteAddress() +" "+ new String(temp));  // 뭐 보내는지 체크용 
+			if(temp.length <= 1024)
+				System.out.println("send to "+ socketC.getRemoteAddress() +" "+ new String(temp));  // 뭐 보내는지 체크용 
 			socketC.write(ByteBuffer.wrap(temp));
 			it.remove();
 		}
@@ -320,7 +339,7 @@ public class Server {
 		String roomCode = input.split(":")[2];
 		int code = Integer.parseInt(roomCode);
 		//System.out.println("길이 : "+chatText.length()+" 받은 메세지 : "+ chatText );
-		for(int i=0;i<clientlist.size();i++)   // 될지 안될지 모름 
+		for(int i=0;i<clientlist.size();i++)   
 		{
 			if(socketC.equals(clientlist.get(i).getSocketChannel()))
 			{
@@ -414,8 +433,7 @@ public class Server {
 		String token = input.split(":")[0];
 		String id = input.split(":")[1];
 		String pw = input.split(":")[2];
-		int port = Integer.parseInt(input.split(":")[3]);
-		System.out.println("로그인 요청 -> clientID : "+ id + " client PW : "+ pw+ " client UDP port : "+ port);	
+		System.out.println("로그인 요청 -> clientID : "+ id + " client PW : "+ pw);	
 		
 		// 클라이언트 있는지 찾아보기  있으면 id , pw 비교 
 		for(int i=0;i<clientlist.size();i++)
@@ -433,7 +451,6 @@ public class Server {
 				}
 				// 로그인 성공했을때 
 				c.setSocketChannel(socketC);     // 클라이언트 address 설정     
-				c.setUDPport(port);
 				List<byte[]> updateClientData = clientChannel.get(socketC);
 				updateClientData.add(loginAcceptCode.getBytes());
 				key.interestOps(SelectionKey.OP_WRITE);
@@ -501,10 +518,10 @@ public class Server {
 		SocketChannel socketC = (SocketChannel)key.channel();
 		String token = input.split(":")[0];
 		String rname = input.split(":")[1];
-		String tname = input.split(":")[2];
+		String host = input.split(":")[2];
 		String limit = input.split(":")[3];
 		int num = Integer.parseInt(limit); 
-		System.out.println("방 생성 요청 ->"+ rname + ","+ tname +","+ num);
+		System.out.println("방 생성 요청 ->"+ rname + ","+ host +","+ num);
 		for(int i=0;i<roomList.size();i++)
 		{
 			if(roomList.get(i).getRoomName().equals(rname))
@@ -516,7 +533,7 @@ public class Server {
 		}
 		if(flag)
 		{
-			r = new Room(roomCount+1 , rname , tname , num);
+			r = new Room(roomCount+1 , rname , host , num);
 			roomCount++;
 			return r; 
 		}
@@ -556,25 +573,18 @@ public class Server {
 			}
 		}
 	}
-	public void receiveImage(String input)
+	public Client findSender(SelectionKey key)
 	{
-		
-	}
-	public void sendImage()
-	{
-		DatagramPacket dp;
-		String testMsg = "send testMsg by udp";
-		int port;
+		Client sender = null;
+		SocketChannel channel = (SocketChannel) key.channel();
 		for(int i=0;i<clientlist.size();i++)
 		{
-			port = clientlist.get(i).getUDPport();
-			dp = new DatagramPacket(testMsg.getBytes(), testMsg.getBytes().length,local,port);
-			try {
-				udpSocket.send(dp);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				System.out.println("send by udp fail! -> server.java line 488");
+			if(channel.equals(clientlist.get(i).getSocketChannel()))
+			{
+				sender = clientlist.get(i);
+				break;
 			}
 		}
+		return sender;
 	}
 }

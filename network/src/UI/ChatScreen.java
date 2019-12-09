@@ -16,18 +16,22 @@ public class ChatScreen
 	private boolean act;
 	private JFrame frame;
 	private JTextField chat;
-	private JButton submit;
+	private JButton submit , cameraOn , cameraOff , monitorOn , monitorOff;
 	private JPanel panel;
 	private JLabel teacher, client;
 	private JTextArea chatlog;
 	private JScrollPane scroll;
+	private Camera cam;
+	private Monitor monitor;
 	Sender send;
-	public ChatScreen(boolean flag , Sender s)
+	public ChatScreen(boolean flag , Sender s , Camera cam , Monitor monitor)
 	{
 		this.act = flag;
+		this.cam = cam;
 		this.send = s;
+		this.monitor = monitor;
 		frame = new JFrame("채팅 화면");
-		frame.setBounds(900, 300, 400, 500);
+		frame.setBounds(900, 300, 800, 500);
 		panel = new JPanel();
 		frame.add(panel);
 		frame.addWindowListener(new WindowAdapter() {
@@ -37,6 +41,7 @@ public class ChatScreen
 				send.sendString(userChat);
 				ClientMain.roomCode = -1;
 				screenOn(false);
+				cam.screenOn(false);
 				//System.exit(0);
 			}
 		});
@@ -63,6 +68,53 @@ public class ChatScreen
 			}
 		});
 		
+		cameraOn= new JButton("카메라 켜기");
+		cameraOn.setBounds(450,330,120,50);
+		panel.add(cameraOn);
+		cameraOn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(act)
+				{
+					cam.screenOn(true);
+					cam.run();
+				}
+			}
+		});
+		
+		cameraOff= new JButton("카메라 끄기");
+		cameraOff.setBounds(590,330,120,50);
+		panel.add(cameraOff);
+		cameraOff.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(act)
+				cam.screenOn(false);
+			}
+		});
+		
+		monitorOn= new JButton("모니터 켜기");
+		monitorOn.setBounds(450,390,120,50);
+		panel.add(monitorOn);
+		monitorOn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(act)
+				{
+					monitor.screenOn(true);
+					monitor.printScreen();
+				}
+			}
+		});
+		
+		monitorOff= new JButton("모니터 끄기");
+		monitorOff.setBounds(590,390,120,50);
+		panel.add(monitorOff);
+		monitorOff.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(act)
+					monitor.screenOn(false);
+			}
+		});
+		
+	
 		chatlog = new JTextArea();
 		chatlog.setBounds(30, 30,340, 350);
 		panel.add(chatlog);

@@ -1,5 +1,8 @@
 package clientSide;
+import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -10,22 +13,24 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import javax.imageio.ImageIO;
+
 import UI.LoginScreen;
 import UI.PrintInfoScreen;
-import UI.RoomScreen;
+import UI.Monitor;
 import UI.Camera;
 import UI.ChatScreen;
 import UI.CreateRoomScreen;
 import UI.LobbyScreen;
 public class ClientMain {
-	private static ByteBuffer buffer = ByteBuffer.allocate(1024);
+	private static ByteBuffer buffer = ByteBuffer.allocate(100000);
 	private static ChatScreen chat;
 	private static LoginScreen login;
 	private static LobbyScreen lobby;
 	private static CreateRoomScreen crs;
 	private static PrintInfoScreen pis;
 	private static Camera cam;
-	private static RoomScreen rs;
+	private static Monitor monitor;
 	public static int roomCode = -1;
 	private static String ip = "";
 	public static void main(String[] args) throws IOException {
@@ -42,8 +47,8 @@ public class ClientMain {
 		}
 		SocketAddress sa = new InetSocketAddress(ip, default_port);
 		SocketChannel sc = SocketChannel.open(sa);
-		DatagramSocket udpSocket = new DatagramSocket();
-		System.out.println("Client UDP socket port : "+udpSocket.getLocalPort());
+		//DatagramSocket udpSocket = new DatagramSocket();
+		//System.out.println("Client UDP socket port : "+udpSocket.getLocalPort());
 		if(!sc.isOpen())
 		{
 			System.out.println("client socketChannel open fail!");
@@ -62,10 +67,10 @@ public class ClientMain {
 			Thread thread = new Thread() {
 				public void run()
 				{
-					Sender send = new Sender(sc , udpSocket);
+					Sender send = new Sender(sc);
 					cam = new Camera(send);
-					rs = new RoomScreen(false, send);
-					chat = new ChatScreen(false, send);
+					monitor = new Monitor(false);
+					chat = new ChatScreen(false, send , cam , monitor);
 					crs = new CreateRoomScreen(false , send);
 					lobby = new LobbyScreen(false, send , crs);
 					login = new LoginScreen(true , send , lobby);
@@ -85,7 +90,7 @@ public class ClientMain {
 					{
 						return;
 					}
-					else if(readNum > 0)   // && readNum <=1024
+					else if(readNum > 0 && readNum < 1024)   // && readNum <=1024
 					{
 						input = new String(buffer.array(),"UTF-8");
 						//System.out.println("길이 : "+input.length()+" 읽은 값 : "+ input);
@@ -120,9 +125,9 @@ public class ClientMain {
 								roomCode= Integer.parseInt(input.split(":")[1]);
 								System.out.println("접속한 룸 코드 : "+ roomCode);
 								chat.screenOn(true);
-								rs.screenOn(false);
-								cam.screenOn(true);
-								cam.camera_work();
+								//monitor.screenOn(false);
+								//cam.screenOn(true);
+								//cam.camera_work();
 							}
 							else
 							{
@@ -140,9 +145,27 @@ public class ClientMain {
 						buffer.compact();    // 버퍼 초기화 해야됨  이 방법 말고 
 						buffer.clear();
 					}
+					else if (readNum >= 1024)   // 이미지 읽기 
+					{
+						if(monitor.isAct())
+						{
+							buffer.flip();
+							System.out.println("클라이언트가 받은 이미지 크기 : "+ readNum);
+							byte [] imageInByte= new byte[readNum];
+							buffer.get(imageInByte,buffer.position(), buffer.limit());
+							//System.out.println("buffer position : "+ buffer.position() +" buffer limit :" + buffer.limit());
+							//System.out.println("image byte size : "+ imageInByte.length);
+							BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageInByte));
+							monitor.recvScreen(image);
+						}			
+				        //ImageIO.write(imag, "png", new File("C:\\Users\\s_dlxotjs\\Desktop\\네트워크 프로그래밍", "img-client2.png"));
+						buffer.compact();
+						buffer.clear();
+					}
 				}
 				catch (Exception e) {
 					// TODO: handle exception
+					e.printStackTrace();
 					System.err.println(e);
 					break;
 				}
@@ -157,5 +180,9 @@ public class ClientMain {
 	public String getIp()
 	{
 		return ip;
+	}
+	public void readImage()
+	{
+		
 	}
 }

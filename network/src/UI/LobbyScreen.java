@@ -20,7 +20,7 @@ public class LobbyScreen
 	private JTextField roomName;
 	private int x = 80;
 	private CreateRoomScreen crs;
-	private RoomScreen rs;
+	private Monitor rs;
 	private PrintInfoScreen pis;
 	private JTextArea roomlist;
 	private JScrollPane scroll;

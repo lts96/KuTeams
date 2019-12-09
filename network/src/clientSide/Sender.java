@@ -27,13 +27,9 @@ public class Sender
 	private SocketChannel socketC;
 	private BufferedImage image;
 	private Robot robot;
-	private DatagramPacket dp;
-	private DatagramSocket udpSocket;
-	public Sender(SocketChannel s1 , DatagramSocket s2)
+	public Sender(SocketChannel s1)
 	{
 		this.socketC = s1;
-		this.setUdpSocket(s2);
-		
 		try {
 			robot = new Robot();
 		} catch (AWTException e) {
@@ -71,23 +67,15 @@ public class Sender
 		String token = "[im]:"+code+":"+imageInByte.length+":";
 		
 		// 결과 ->  39648byte
-		imageBuffer.clear();
 		imageBuffer = ByteBuffer.wrap(imageInByte);
 		int write = socketC.write(imageBuffer);
-		//System.out.println("write 한 길이 : "+ write);
+		System.out.println("write 한 길이 : "+ write);
 		//imageBuffer.flip();
 		// 이번엔 바이트 배열을 이미지로 변환해서 저장해보기 -> 성공     이제 이걸 서버에서 해보고 성공하면 끝 
 		//BufferedImage imag = ImageIO.read(new ByteArrayInputStream(imageInByte));
         //ImageIO.write(imag, "png", new File("C:\\Users\\s_dlxotjs\\Desktop\\네트워크 프로그래밍", "img.png"));
-		
-		
-	
+		imageBuffer.compact();
+		imageBuffer.clear();
 		return flag;
-	}
-	public DatagramSocket getUdpSocket() {
-		return udpSocket;
-	}
-	public void setUdpSocket(DatagramSocket udpSocket) {
-		this.udpSocket = udpSocket;
 	}
 }

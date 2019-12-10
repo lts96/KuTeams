@@ -603,4 +603,24 @@ public class Server {
 			client.setOnline(false);
 		}
 	}
+	public String currentClientList(int roomCode)    // 아직 미완성 -> 이걸 클라이언트 만들어지거나 나가는 곳마다 넣어줘야됨 
+	{
+		String list = "[cl]:";
+		int num = 0;
+		for(int  i = 0; i< roomList.size();i++)
+		{
+			if(roomList.get(i).getRoomCode() == roomCode)
+			{
+				Room r = roomList.get(i);
+				for(int j =0;j< r.getClientList().size();i++)
+				{
+					list += r.getClientList().get(i).getName() + ":";
+				}
+				break;
+			}
+		}
+		if(num == 0)
+			list += num + ":";
+		return list;
+	}
 }

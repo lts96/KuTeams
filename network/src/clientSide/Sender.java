@@ -62,7 +62,7 @@ public class Sender
 		boolean flag = true;
 		//System.out.println("이미지 정보 : "+ image.toString());      // 우선 이미지 -> 바이트 배열로 변환 (전송하기 위해)
 		ByteArrayOutputStream baos=new ByteArrayOutputStream();
-		ImageIO.write(image, "png", baos );
+		ImageIO.write(image, "png", baos );                      // jpg 포맷이랑 비교   용량 jpg > png  그런데 속도는 jpg가 더 빠른 느낌   압축하는데 걸리는 시간 차이?
 		byte[] imageInByte=baos.toByteArray();
 		//System.out.println("byte size : "+ imageInByte.length + " byte data : "+ imageInByte.toString());  
 		String token = "[im]:"+code+":"+imageInByte.length+":";

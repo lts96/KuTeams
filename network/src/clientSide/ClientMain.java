@@ -49,6 +49,7 @@ public class ClientMain {
 			System.out.println("client selector open fail!");
 			return;
 		}
+		
 		SocketAddress sa = new InetSocketAddress(ip, default_port);
 		sc = SocketChannel.open(sa);
 		//DatagramSocket udpSocket = new DatagramSocket();
@@ -67,7 +68,10 @@ public class ClientMain {
 			
 			//sc.connect(new java.net.InetSocketAddress(ip, default_port));
 			if(!sc.isConnected())
-				System.out.println("서버와 채널 연결 실패!");
+			{
+				System.out.println("서버와 채널 연결 실패!\n클라이언트를 강제 종료합니다.");
+				System.exit(1);
+			}
 			thread = new Thread() {
 				public void run()
 				{
@@ -116,7 +120,10 @@ public class ClientMain {
 						}
 						else if (sub.equals("[[rc")) // 방 생성 결과 
 						{
-							crs.recvMsg(input);
+							if(crs.recvMsg(input))
+							{
+								chat.screenOn(true);
+							}
 						}
 						else if(sub.equals("[ri]"))   
 						{
@@ -213,7 +220,7 @@ public class ClientMain {
 				e.printStackTrace();
 			}
 		}
-		System.out.println("클라이언트를 정상적으로 종료합니다.");
+		System.out.println("클라이언트["+clientName+"]를 정상적으로 종료합니다.");
 		System.exit(0);
 	}
 }

@@ -84,9 +84,9 @@ public class Camera
 	}
 	public void screenOn(boolean act)
 	{
+		this.flag = act;
 		frame.setVisible(act);
 		panel.setVisible(act);
-		this.flag = act;
 	}
 	public void setTitle()
 	{

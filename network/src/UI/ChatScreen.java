@@ -18,7 +18,7 @@ public class ChatScreen
 	private JTextField chat;
 	private JButton submit , cameraOn , cameraOff , monitorOn , monitorOff;
 	private JPanel panel;
-	private JLabel teacher, client;
+	private JLabel chatLabel, clientLabel;
 	private JTextArea chatlog , clientList;
 	private JScrollPane scroll , scroll2;
 	private Camera cam;
@@ -102,6 +102,7 @@ public class ChatScreen
 			public void actionPerformed(ActionEvent e) {
 				if(act)
 				{
+					chatlog.append("[시스템] : 모니터를 켰습니다.\n");
 					monitor.screenOn(true);
 					if(monitor.isAct())
 						monitor.printScreen();
@@ -115,28 +116,39 @@ public class ChatScreen
 		monitorOff.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if(act)
+				{
+					chatlog.append("[시스템] : 모니터를 껐습니다.\n");
 					monitor.screenOn(false);
+				}
 			}
 		});
 		
 	
 		chatlog = new JTextArea();
-		chatlog.setBounds(30, 30,340, 350);
+		chatlog.setBounds(30,70,340, 330);
 		panel.add(chatlog);
 		
 		scroll = new JScrollPane(chatlog);
-		scroll.setBounds(30, 30,340, 350);
+		scroll.setBounds(30, 70,340, 330);
 		scroll.getViewport().setBackground(Color.white);
 		panel.add(scroll);
 		
 		clientList = new JTextArea();
-		clientList.setBounds(450, 30, 710, 300);
+		clientList.setBounds(450, 70, 260, 230);
 		panel.add(clientList);
 		
 		scroll2 = new JScrollPane(clientList);
-		scroll2.setBounds(30, 30,340, 350);
+		scroll2.setBounds(450, 70,260, 230);
 		scroll2.getViewport().setBackground(Color.white);
 		panel.add(scroll2);
+		
+		clientLabel = new JLabel("현재 접속 명단");
+		clientLabel.setBounds(450, 30, 150, 40);
+		panel.add(clientLabel);
+		
+		chatLabel = new JLabel("채팅 기록");
+		chatLabel.setBounds(30, 30 , 120,40);
+		panel.add(chatLabel);
 		
 		frame.setVisible(flag);
 		panel.setVisible(true);

@@ -111,7 +111,10 @@ public class LobbyScreen
 	public void enterRoom()
 	{
 		String enterRequest = roomName.getText();
-		s.sendString("[ra]:"+enterRequest+":");
+		if(enterRequest.length() > 0)
+			s.sendString("[ra]:"+enterRequest+":");
+		else 
+			JOptionPane.showMessageDialog(null, "[[ra fail]] \n room is not exist");
 	}
 	public void failRoomAccess(String str)
 	{

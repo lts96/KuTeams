@@ -13,7 +13,6 @@ public class Client
 	private SocketChannel socketC;   
 	private int roomCode = -1;
 	private boolean online = false;
-	private int udpPort;
 	private InetAddress ia;
 	public Client()
 	{
@@ -68,12 +67,6 @@ public class Client
 	}
 	public void setSocketChannel(SocketChannel socketC) {
 		this.socketC = socketC;
-	}
-	public int getUDPport() {
-		return udpPort;
-	}
-	public void setUDPport(int port) {
-		this.udpPort = port;
 	}
 	public InetAddress getIa() {
 		return ia;

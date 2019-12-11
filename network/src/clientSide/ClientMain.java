@@ -32,6 +32,7 @@ public class ClientMain {
 	private static Camera cam;
 	private static Monitor monitor;
 	public static int roomCode = -1;
+	public static String roomName = "";
 	public static String clientName = "";
 	private static String ip = "";
 	private static SocketChannel sc = null;
@@ -106,9 +107,10 @@ public class ClientMain {
 						if(sub.equals("[[lo"))  // 패킷 검사하기 (로그인인지 아닌지)
 						{
 							//sub = input.substring(0,17);
-							if(login.recvLogin(input));
+							if(login.recvLogin(input))          // 로그인 성공시 
 							{
 								lobby.setTitle();
+								lobby.requestRoomList();   // change
 								monitor.setTitle();
 								cam.setTitle();
 								chat.setTitle();
@@ -141,9 +143,7 @@ public class ClientMain {
 								roomCode= Integer.parseInt(input.split(":")[1]);
 								System.out.println("접속한 룸 코드 : "+ roomCode);
 								chat.screenOn(true);
-								//monitor.screenOn(false);
-								//cam.screenOn(true);
-								//cam.camera_work();
+								
 							}
 							else
 							{
@@ -160,7 +160,12 @@ public class ClientMain {
 						}
 						else if(sub.equals("[cl]"))    // 클라이언트 리스트 받았을때
 						{
-							chat.printClientList(input);
+							if(chat.isAct())
+							{
+								System.out.println(clientName +"님이 받은 리스트 : "+ input);
+								//System.out.println("지금 내 방 코드 : "+roomCode);
+								chat.printClientList(input);
+							}
 						}
 						buffer.compact();    // 버퍼 초기화 해야됨  이 방법 말고 
 						buffer.clear();
@@ -178,7 +183,6 @@ public class ClientMain {
 							BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageInByte));
 							monitor.recvScreen(image);
 						}			
-				        //ImageIO.write(imag, "png", new File("C:\\Users\\s_dlxotjs\\Desktop\\네트워크 프로그래밍", "img-client2.png"));
 						buffer.compact();
 						buffer.clear();
 					}

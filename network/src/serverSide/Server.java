@@ -223,13 +223,14 @@ public class Server {
 					{
 						roomList.add(r);
 						sendMsgToClient("[[rc success]]:"+r.getRoomCode()+":", key);
-						sendMsgToClient("[ri]:"+r.getRoomName()+":"+r.getClientList().size()+":"+r.getLimit()+":",key);
+						sendMsgToClient("[ri]:"+r.getRoomName()+":"+r.getCurrentClientNum()+":"+r.getLimit()+":",key);
 						for(int i=0;i<clientlist.size();i++)
 						{
 							if(clientlist.get(i).getSocketChannel()!=null&& clientlist.get(i).getSocketChannel().equals(socketC))
 							{
 								clientlist.get(i).setRoomCode(r.getRoomCode());
-								r.addClient(clientlist.get(i));
+								r.addClient(clientlist.get(i));               // 안쓰는 코드 -> 나중에 지워버리기 
+								r.setCurrentClientNum(1);
 								System.out.println("클라이언트 "+ clientlist.get(i).getName()+"님이 "+r.getRoomName()+" 방에 입장");
 								break;
 							}
@@ -245,8 +246,23 @@ public class Server {
 				{
 					int code = enterRoom(key,input);
 					if(code > 0)
-						sendMsgToClient("[[ra success]]:"+code +":", key);    // 방 입장 성공
-					else if (code == -1)       //
+					{
+						sendMsgToClient("[[ra success]]:"+ code +":", key);    // 방 입장 성공
+						String list = currentClientList("[cl]:"+code +":");    // 입장 에러 발생하면 여기부터 for문 지워버리기 
+						for(int i=0;i<clientlist.size();i++)
+						{
+							if(clientlist.get(i).getRoomCode() == code)
+							{
+								SocketChannel target = clientlist.get(i).getSocketChannel();
+								if(target!=null)
+								{
+									SelectionKey targetKey = target.keyFor(selector);
+									sendMsgToClient(list,targetKey);
+								}
+							}
+						}                                  
+					}
+					else if (code == -1)       
 						sendMsgToClient("[[ra fail]] \n room is not exist:", key);   // 입장 실패 -> 방 못찾음
 					else if (code == -2)
 						sendMsgToClient("[[ra fail]] \n room is already full:", key); // 입장 실패 -> 인원 제한 걸림
@@ -258,21 +274,36 @@ public class Server {
 					for(int i=0;i<roomList.size();i++)
 					{
 						r= roomList.get(i);
-						str += r.getRoomName()+":"+r.getClientList().size()+":"+r.getLimit()+":";
+						str += r.getRoomName()+":"+r.getCurrentClientNum()+":"+r.getLimit()+":";
 					}
 					sendMsgToClient(str,key);
 				}
 				else if(token.equals("[ex]"))   // 클라이언트가 채팅방에서 나갈때 
 				{
-					exitRoom(input , key);
-				}
-				else if(token.equals("[im]"))   
-				{
-					int rcode = Integer.parseInt(input.split(":")[1]);	
+					int code = exitRoom(input , key);      // code 가 이상하다
+					
+					// 에러나면 이 밑의 코드 삭제 
+					String list = currentClientList("[cl]:"+code +":");
+					for(int i=0;i<clientlist.size();i++)
+					{
+						if(clientlist.get(i).getRoomCode() == code)
+						{
+							SocketChannel target = clientlist.get(i).getSocketChannel();
+							if(target!=null)
+							{
+								SelectionKey targetKey = target.keyFor(selector);
+								sendMsgToClient(list,targetKey);
+							}
+						}
+					}
 				}
 				else if(token.equals("[cc]"))   // 클라이언트 연결이 끊어졌을때 -> 로그아웃    라인 597
 				{
 					logOut(findSender(key));
+				}
+				else if(token.equals("[cl]"))   // 클라이언트가 현재 방 안의 사람 리스트 요구했을때 
+				{
+					sendMsgToClient(currentClientList(input),key);
 				}
 				buffer.compact();    // 이건 불안정한 방법 -> 버퍼가 읽은 값이 512를 넘어가면 제대로 초기화가 안됨 
 				buffer.clear();
@@ -282,11 +313,11 @@ public class Server {
 				//readNum = socketC.read(buffer);
 				//한번에 read 할수 있는 바이트 수 -> 131711 ?  이 이상을 읽지를 못함 
 				buffer.flip();
-				System.out.println("readNum : "+ readNum);
+				//System.out.println("readNum : "+ readNum);
 				byte [] imageInByte= new byte[readNum];
 				buffer.get(imageInByte,buffer.position(), buffer.limit());
-				System.out.println("buffer position : "+ buffer.position() +" buffer limit :" + buffer.limit());
-				System.out.println("image byte size : "+ imageInByte.length);
+				//System.out.println("buffer position : "+ buffer.position() +" buffer limit :" + buffer.limit());
+				//System.out.println("image byte size : "+ imageInByte.length);
 				
 				Client sender = findSender(key);
 				if(sender!=null)
@@ -298,7 +329,7 @@ public class Server {
 							SocketChannel target = clientlist.get(i).getSocketChannel();
 							if(target!=null)
 							{
-								System.out.println(sender.getName()+"님이 "+clientlist.get(i).getName() +"에게");
+								//System.out.println(sender.getName()+"님이 "+clientlist.get(i).getName() +"에게");
 								SelectionKey targetKey = target.keyFor(selector);
 								SocketChannel targetChannel = (SocketChannel)targetKey.channel();
 								List<byte[]> updateClientData = clientChannel.get(targetChannel);
@@ -337,7 +368,7 @@ public class Server {
 		}
 		key.interestOps(SelectionKey.OP_READ);
 	}
-	public void sendMessage(SelectionKey key , String input) throws IOException       // 받은 데이터 다른 클라이언트들에게 전송   미완성 
+	public void sendMessage(SelectionKey key , String input) throws IOException       // 받은 데이터 다른 클라이언트들에게 전송    
 	{
 		SocketChannel socketC = (SocketChannel) key.channel();
 		Client sender = null;
@@ -482,7 +513,7 @@ public class Server {
 	{
 		
 	}
-	public int enterRoom(SelectionKey key, String input)
+	public int enterRoom(SelectionKey key, String input)   // 방 들어갈때 
 	{
 		SocketChannel socketC = (SocketChannel) key.channel();
 		Client sender = null;
@@ -510,7 +541,7 @@ public class Server {
 					num++; 
 					temp.setCurrentClientNum(num);
 					if(sender!=null)
-						sender.setRoomCode(temp.getRoomCode());
+						sender.setRoomCode(temp.getRoomCode());    // 클라이언트의 룸 번호 갱신 -> 이거 안해주면 같은 방이란걸 인식 못해서 메세지 못받음 
 					return temp.getRoomCode();
 				}
 				else  // 방은 있는데 자리가 없어서 못들어갈때 
@@ -519,7 +550,7 @@ public class Server {
 		}
 		return -1;  // 방을 못찾았을때 
 	}
-	public Room createRoom(String input ,SelectionKey key)
+	public Room createRoom(String input ,SelectionKey key)   // 방 생성하는 함수 
 	{
 		Room r;
 		boolean flag = true;
@@ -539,7 +570,7 @@ public class Server {
 				break;
 			}
 		}
-		if(flag)
+		if(flag)   // 방 생성 가능 
 		{
 			r = new Room(roomCount+1 , rname , host , num);
 			roomCount++;
@@ -548,7 +579,7 @@ public class Server {
 		else 
 			return null;
 	}
-	public void exitRoom(String input , SelectionKey key)       
+	public int exitRoom(String input , SelectionKey key)    // 방에서 나갈때    
 	{
 		Room temp;
 		String token = input.split(":")[0];
@@ -567,10 +598,13 @@ public class Server {
 				num--;
 				temp.setCurrentClientNum(num);
 				targetRoomCode = temp.getRoomCode();
+				
+				Client sender = findSender(key);
+				sender.setRoomCode(-1);                              // 나간 놈은 무조건 음수 처리   안그러면 나간 놈이 계속 목록에 뜸 
 				break;
 			}
 		}
-		if(targetRoomCode >=0)
+		if(targetRoomCode >=0)       // 해당 방이 존재했을때 
 		{
 			text = "[cp]:"+text+":"+ Integer.toString(targetRoomCode)+":";
 			try {
@@ -580,8 +614,9 @@ public class Server {
 				System.out.println("에러 발생 : 서버 라인 544");
 			}
 		}
+		return targetRoomCode;
 	}
-	public Client findSender(SelectionKey key)
+	public Client findSender(SelectionKey key)    // 패킷 송신자 찾아서 리턴 
 	{
 		Client sender = null;
 		SocketChannel channel = (SocketChannel) key.channel();
@@ -603,24 +638,25 @@ public class Server {
 			client.setOnline(false);
 		}
 	}
-	public String currentClientList(int roomCode)    // 아직 미완성 -> 이걸 클라이언트 만들어지거나 나가는 곳마다 넣어줘야됨 
+	public String currentClientList(String input)    // 아직 미완성 -> 이걸 클라이언트 들어오거나 나가는 곳마다 넣어줘야됨    현재 방에 누구있는지 문자열로 편집해서 리턴 
 	{
-		String list = "[cl]:";
+		String list = input.split(":")[0] + ":";
+		int roomCode = Integer.parseInt(input.split(":")[1]);
+		String client ="";
 		int num = 0;
-		for(int  i = 0; i< roomList.size();i++)
+		for(int i=0;i<clientlist.size();i++)
 		{
-			if(roomList.get(i).getRoomCode() == roomCode)
+			if(clientlist.get(i).getRoomCode() == roomCode)
 			{
-				Room r = roomList.get(i);
-				for(int j =0;j< r.getClientList().size();i++)
-				{
-					list += r.getClientList().get(i).getName() + ":";
-				}
-				break;
+				num++;
+				client += clientlist.get(i).getName()+":";
 			}
 		}
 		if(num == 0)
 			list += num + ":";
+		else 
+			list += num + ":" + client;
+		//System.out.println("list : "+ list);
 		return list;
 	}
 }

@@ -16,7 +16,7 @@ public class ChatScreen
 	private boolean act;
 	private JFrame frame;
 	private JTextField chat;
-	private JButton submit , cameraOn , cameraOff , monitorOn , monitorOff;
+	private JButton submit , cameraOn , cameraOff , monitorOn , monitorOff , updateList;
 	private JPanel panel;
 	private JLabel chatLabel, clientLabel;
 	private JTextArea chatlog , clientList;
@@ -42,6 +42,7 @@ public class ChatScreen
 				ClientMain.roomCode = -1;
 				screenOn(false);
 				cam.screenOn(false);
+				monitor.screenOn(false);
 				//System.exit(0);
 			}
 		});
@@ -68,6 +69,16 @@ public class ChatScreen
 			}
 		});
 		
+		updateList = new JButton("업데이트");
+		updateList.setBounds(610, 30, 100, 40);
+		panel.add(updateList);
+		updateList.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(act)
+					requestClientList();//서버에 현재 접속 인원 리스트 요청 
+			}
+		});
+		
 		cameraOn= new JButton("카메라 켜기");
 		cameraOn.setBounds(450,330,120,50);
 		panel.add(cameraOn);
@@ -76,6 +87,7 @@ public class ChatScreen
 				if(act)
 				{
 					send.sendString("[ch]:"+"님이 방송을 시작했습니다!"+":"+ClientMain.roomCode+":");
+					chatlog.append("[시스템] : 카메라를 켰습니다.\n");
 					cam.screenOn(true);
 					cam.run();
 				}
@@ -90,6 +102,7 @@ public class ChatScreen
 				if(act)
 				{
 					send.sendString("[ch]:"+"님이 방송을 종료했습니다."+":"+ClientMain.roomCode+":");
+					chatlog.append("[시스템] : 카메라를 껐습니다.\n");
 					cam.screenOn(false);
 				}
 			}
@@ -189,9 +202,12 @@ public class ChatScreen
 	}
 	public void printClientList(String list)                  // 현재 해당 방에 접속중인 client 출력 
 	{
+		clientList.setText("");       // 초기화 
+		if(list.length() == 0)
+			return;
 		String token = list.split(":")[0];
 		int num = Integer.parseInt(list.split(":")[1]);
-		for(int i=2 ;i< num+2;i++)
+		for(int i=2;i< num+2;i++)
 		{
 			String name = list.split(":")[i];
 			clientList.append("[이름 : "+ name+"]" +"\n");
@@ -203,9 +219,14 @@ public class ChatScreen
 		this.frame.setVisible(flag);
 		chatlog.setText("");
 		chat.setText("");
+		clientList.setText("");
 		String userChat = "[ch]:님이 채팅을 시작했습니다."+":"+ClientMain.roomCode+":";
 		if(flag)
 			send.sendString(userChat);
+	}
+	public void requestClientList()
+	{
+		send.sendString("[cl]:"+ClientMain.roomCode+":");
 	}
 	public boolean isAct()     // 지금 켜진 상태인지 체크용
 	{

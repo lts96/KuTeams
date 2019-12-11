@@ -16,6 +16,7 @@ public class Monitor {
 	private JFrame frame;
 	private JPanel panel;
 	private boolean act;
+	private Thread print;
 	final int w = 720, h = 480;
 	private BufferedImage image;
 	public Monitor()
@@ -44,7 +45,7 @@ public class Monitor {
 	}
 	public void printScreen()
 	{
-		Thread t2 = new Thread() {
+		print = new Thread() {
 			public void run()
 			{
 				while(act) 
@@ -54,12 +55,12 @@ public class Monitor {
 				}
 			}
 		};
-		t2.start();
+		print.start();
 	}
 	public void screenOn(boolean flag)
 	{
-		this.frame.setVisible(flag);
 		this.act = flag;
+		this.frame.setVisible(flag);
 	}
 	public boolean isAct()
 	{

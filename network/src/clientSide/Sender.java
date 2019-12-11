@@ -62,7 +62,7 @@ public class Sender
 		boolean flag = true;
 		//System.out.println("이미지 정보 : "+ image.toString());      // 우선 이미지 -> 바이트 배열로 변환 (전송하기 위해)
 		ByteArrayOutputStream baos=new ByteArrayOutputStream();
-		ImageIO.write(image, "png", baos );                      // jpg 포맷이랑 비교   용량 jpg > png  그런데 속도는 jpg가 더 빠른 느낌   압축하는데 걸리는 시간 차이?
+		ImageIO.write(image, "jpg", baos );                      // jpg 포맷이랑 비교   용량 jpg > png  그런데 속도는 jpg가 더 빠른 느낌   압축하는데 걸리는 시간 차이?
 		byte[] imageInByte=baos.toByteArray();
 		//System.out.println("byte size : "+ imageInByte.length + " byte data : "+ imageInByte.toString());  
 		String token = "[im]:"+code+":"+imageInByte.length+":";
@@ -70,7 +70,7 @@ public class Sender
 		// 결과 ->  39648byte
 		imageBuffer = ByteBuffer.wrap(imageInByte);
 		int write = socketC.write(imageBuffer);
-		System.out.println("write 한 길이 : "+ write);
+		System.out.println("write 한 이미지 바이트 : "+ write);
 		//imageBuffer.flip();
 		// 이번엔 바이트 배열을 이미지로 변환해서 저장해보기 -> 성공     이제 이걸 서버에서 해보고 성공하면 끝 
 		//BufferedImage imag = ImageIO.read(new ByteArrayInputStream(imageInByte));

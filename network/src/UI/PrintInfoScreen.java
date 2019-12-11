@@ -8,25 +8,25 @@ public class PrintInfoScreen
 	{
 		
 	}
-	public PrintInfoScreen(boolean flag , String name , String id , String pw , String socketAddr , int time) // 미완 
+	public PrintInfoScreen(boolean flag) // 미완 
 	{
-		frame = new JFrame(name+"의 회원 정보");
+		frame = new JFrame("의 회원 정보");
 		JPanel panel = new JPanel();
 		panel.setLayout(null);
 		frame.add(panel);
 		frame.setBounds(300, 200, 400, 400);
-		JLabel userName = new JLabel("이름 :   "+ name);
+		JLabel userName = new JLabel("이름 :   ");
 		userName.setBounds(30, 30, 150, 40);
-		JLabel userId = new JLabel("ID :  "+ id);
+		JLabel userId = new JLabel("ID :  ");
 		userId.setBounds(30, 90, 150, 40);
-		JLabel userPw = new JLabel("PW :   "+ pw);
+		JLabel userPw = new JLabel("PW :   ");
 		userPw.setBounds(30, 150, 150, 40);
-		JLabel userSocketAddr = new JLabel("Addr :  "+ socketAddr);
+		JLabel userSocketAddr = new JLabel("Addr :  ");
 		userSocketAddr.setBounds(30, 210, 250, 40);
-		JLabel userTime = new JLabel("총 수강시간 :  "+ time);
-		userTime.setBounds(30, 270, 150, 40);
+		JLabel userCode = new JLabel("RoomCode :  ");
+		userCode.setBounds(30, 270, 150, 40);
 		
-		panel.add(userTime);
+		panel.add(userCode);
 		panel.add(userSocketAddr);
 		panel.add(userPw);
 		panel.add(userId);

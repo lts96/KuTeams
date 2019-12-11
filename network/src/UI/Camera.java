@@ -45,6 +45,7 @@ public class Camera
 			}
 		});
 		this.send = s;
+		//frame.setResizable(false);
 		frame.setVisible(false);
 		//frame.add(panel);
 		//panel.setVisible(false);
